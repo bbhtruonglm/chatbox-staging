@@ -332,6 +332,12 @@ const source: Language = {
       add_customer: 'Add Customer',
       create_new_group: 'Create New Group',
       search_member: 'Search for Member',
+
+      create_group: 'Create Group',
+      your_group_name: 'Your Group Name',
+      create_zalo_group: 'Create Zalo Group',
+      member_selected: 'Member Selected',
+
       unsupport_message:
         'This message content cannot be displayed currently, please contact the system administrator.',
       close: 'Close',

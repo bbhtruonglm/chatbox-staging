@@ -16,10 +16,10 @@
         <label>{{ $t('v1.common.create_new_group') }}</label>
         <div class="flex gap-2 items-center w-full">
           <input
-            v-model="groupName"
+            v-model="group_name"
             :class="[
               'border h-8 w-full rounded px-2 py-0.5 text-sm',
-              errorGroupName ? 'border-red-500' : '',
+              error_group_name ? 'border-red-500' : '',
             ]"
             :placeholder="$t('v1.common.your_group_name')"
           />
@@ -31,10 +31,10 @@
           </button>
         </div>
         <p
-          v-if="errorSelectMembers"
+          v-if="error_select_members"
           class="text-red-500 text-xs mt-1"
         >
-          {{ errorSelectMembers }}
+          {{ error_select_members }}
         </p>
 
         <!-- Search member -->
@@ -61,7 +61,7 @@
             class="p-0.5 px-2 bg-blue-50 text-blue-700 font-semibold rounded-md"
           >
             {{ $t('v1.common.member_selected') }}
-            {{ selectedMembers.length }}/100
+            {{ selected_members.length }}/100
           </span>
           <span
             class="p-0.5 px-2 bg-blue-50 text-blue-700 font-semibold rounded-md"
@@ -72,7 +72,7 @@
         <!-- List conversation -->
         <div class="flex-1 overflow-y-auto border-t border-slate-200 pt-2">
           <div
-            v-for="conv in filteredConversations"
+            v-for="conv in FILTERED_CONVERSATION"
             :key="conv.fb_client_id + '_' + conv.fb_page_id"
             class="flex items-center justify-between p-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
             @click="toggleMember(conv)"
@@ -80,7 +80,7 @@
             <div class="flex items-center gap-4">
               <input
                 type="checkbox"
-                :checked="selectedMembers.includes(conv)"
+                :checked="selected_members.includes(conv)"
                 @click.stop
                 class="h-4 w-4 text-blue-600"
               />
@@ -99,7 +99,7 @@
           </div>
 
           <div
-            v-if="filteredConversations.length === 0"
+            v-if="FILTERED_CONVERSATION.length === 0"
             class="p-2 text-slate-400 text-sm"
           >
             {{ $t('v1.common.no_data') }}
@@ -111,69 +111,95 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import { container } from 'tsyringe'
+import { computed, ref } from 'vue'
 
-import { useOrgStore, usePageStore } from '@/stores'
-import { N4SerivceAppConversation } from '@/utils/api/N4Service/Conversation'
-import type { FilterConversation } from '@/service/interface/app/conversation'
 import Modal from '@/components/Modal.vue'
+import type {
+  FilterConversation,
+  QueryConversationResponse,
+} from '@/service/interface/app/conversation'
+import { useOrgStore, usePageStore } from '@/stores'
+import { N13ZaloPersonal } from '@/utils/api/N13ZaloPersonal'
+import { N4SerivceAppConversation } from '@/utils/api/N4Service/Conversation'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { keys } from 'lodash'
-import { N4SerivceAppZaloPersonal } from '@/utils/api/N4Service/ZaloPersonal'
-import { N13ZaloPersonal } from '@/utils/api/N13ZaloPersonal'
 
-/** stores */
+/** Stores quản lý org và page */
 const orgStore = useOrgStore()
 const pageStore = usePageStore()
 
 /** UI state */
-const groupName = ref('')
+/** Tên group Zalo muốn tạo */
+const group_name = ref('')
+/** Từ khóa tìm kiếm conversation */
 const search_conversation = ref<string>()
+/** Ref tới component modal */
 const modal_widget__group_ref = ref<InstanceType<typeof Modal>>()
+/** View hiện tại: SEARCH, CHAT, FRIEND_REQUEST hoặc trống */
 const view = ref<'SEARCH' | 'CHAT' | 'FRIEND_REQUEST' | ''>('')
-const isModalOpen = ref(false)
+/** Cờ kiểm tra modal đang mở */
+const is_modal_open = ref(false)
 
-/** conversation data */
+/** Conversation data */
+/** Danh sách conversation đang hiển thị */
 const conversations = ref<any[]>([])
-const selectedMembers = ref<any[]>([])
+/** Danh sách thành viên được chọn để tạo group */
+const selected_members = ref<any[]>([])
+/** Tổng số conversation */
 const count_conversation = ref<number>(0)
-const afterCursor = ref<number[] | null>(null)
-const isFetching = ref(false)
+/** Cursor cho paging conversation */
+const after_cursor = ref<number[] | undefined>(undefined)
+/** Cờ kiểm tra đang fetch conversation */
+const is_fetching = ref(false)
 
-/** validation */
-const errorGroupName = ref(false)
-const errorSelectMembers = ref('')
+/** Validation */
+/** Kiểm tra lỗi tên group */
+const error_group_name = ref(false)
+/** Kiểm tra lỗi chọn thành viên */
+const error_select_members = ref('')
 
-// Khởi tạo trực tiếp instance API Zalo
+/** Khởi tạo trực tiếp instance API Zalo */
 const API_ZALO = new N13ZaloPersonal('app/page/group')
 
-/* ============================================================
-   MAIN CLASS – CHỈ CHỨA LOGIC API, KHÔNG CHỨA STORE
-============================================================== */
+/**
+ * @class Main
+ * @description Chứa logic gọi API conversation, KHÔNG chứa store
+ */
 class Main {
+  /**
+   * @param API instance N4ServiceAppConversation
+   */
   constructor(
     private readonly API = container.resolve(N4SerivceAppConversation)
   ) {}
 
+  /**
+   * Bật/tắt modal, nếu mở modal sẽ fetch toàn bộ conversation
+   */
   toggleModal() {
     modal_widget__group_ref.value?.toggleModal()
-    isModalOpen.value = !isModalOpen.value
-    if (isModalOpen.value) fetchAllConversations()
+    is_modal_open.value = !is_modal_open.value
+    if (is_modal_open.value) fetchAllConversations()
   }
 
+  /**
+   * Lấy conversation từ server
+   * @param params - object chứa pageIds, orgId, filter, limit, sort, after
+   * @returns kết quả bao gồm result[], after cursor, count
+   */
   async getConversation(params: {
-    pageIds: string[]
-    orgId: string
+    page_ids: string[]
+    org_id: string
     filter: FilterConversation
     limit: number
     sort: string
-    after?: number[] | null
+    after?: number[] | undefined
   }) {
     try {
       return await this.API.readConversations(
-        params.pageIds,
-        params.orgId,
+        params.page_ids,
+        params.org_id,
         params.filter,
         params.limit,
         params.sort,
@@ -185,6 +211,11 @@ class Main {
     }
   }
 
+  /**
+   * Lấy tổng số conversation theo filter
+   * @param params object chứa pageIds và filter
+   * @returns object { count }
+   */
   async countConversation(params: {
     pageIds: string[]
     filter: FilterConversation
@@ -200,114 +231,142 @@ class Main {
 
 const $main = new Main()
 
-/** ============================================
- *  Fetch toàn bộ conversation theo after
-============================================ */
+/**
+ * Fetch toàn bộ conversation theo cursor (paging)
+ * Sử dụng while loop để fetch tới khi hết dữ liệu
+ */
 async function fetchAllConversations() {
-  if (isFetching.value) return
-  isFetching.value = true
+  /** Nếu đang fetch thì return */
+  if (is_fetching.value) return
+  is_fetching.value = true
 
+  /** Lấy tất cả page_id đang chọn */
   const PAGE_IDS = keys(pageStore.selected_page_id_list)
+  /** Filter mặc định */
   const FILTER: FilterConversation = {
     conversation_type: 'CHAT',
     display_style: 'FRIEND',
     is_spam_fb: 'NO',
   }
+  /** Sắp xếp theo số lượng unread, sau đó thời gian tin nhắn cuối */
   const SORT = 'unread_message_amount:desc,last_message_time:desc'
 
+  /** Reset dữ liệu trước khi fetch */
   conversations.value = []
-  selectedMembers.value = []
-  afterCursor.value = null
-
-  let keepFetching = true
-  while (keepFetching) {
-    const res = await $main.getConversation({
-      pageIds: PAGE_IDS,
-      orgId: orgStore.selected_org_id || '',
+  selected_members.value = []
+  after_cursor.value = undefined
+  /** Tạo trạng thái fetching = true */
+  let keep_fetching = true
+  while (keep_fetching) {
+    /** Gọi API để fetch conversation */
+    const RES: QueryConversationResponse | any = await $main.getConversation({
+      page_ids: PAGE_IDS,
+      org_id: orgStore.selected_org_id || '',
       filter: FILTER,
       limit: 50,
       sort: SORT,
-      after: afterCursor.value || null,
+      after: after_cursor.value || undefined,
     })
 
-    if (res?.result?.length) {
-      conversations.value.push(...res.result)
-      afterCursor.value = res.after || null
-      keepFetching = !!afterCursor.value
+    /** Nếu có dữ liệu, push vào list và update cursor */
+    if (RES?.result?.length) {
+      conversations.value.push(...RES.result)
+      after_cursor.value = RES.after || undefined
+      keep_fetching = !!after_cursor.value
     } else {
-      keepFetching = false
+      /** Nếu không có dữ liệu nữa thì dừng loop */
+      keep_fetching = false
     }
 
-    count_conversation.value = res?.count || conversations.value.length
+    count_conversation.value = RES?.count || conversations.value.length
   }
 
-  isFetching.value = false
+  /** Reset cờ fetch */
+  is_fetching.value = false
 }
 
-/** search filter computed: name OR phone (local) */
-const filteredConversations = computed(() => {
+/**
+ * Computed filter conversation theo từ khóa name hoặc phone
+ */
+const FILTERED_CONVERSATION = computed(() => {
+  /** Nếu không có key word thì trả về cả list */
   if (!search_conversation.value) return conversations.value
-  const keyword = search_conversation.value.toLowerCase()
+  /** Xử lý to lowercase */
+  const KEYWORD = search_conversation.value.toLowerCase()
+  /** Xử lý filter conversation phone và name */
   return conversations.value.filter(
     conv =>
-      (conv.client_name || '').toLowerCase().includes(keyword) ||
-      (conv.client_phone || '').includes(keyword)
+      (conv.client_name || '').toLowerCase().includes(KEYWORD) ||
+      (conv.client_phone || '').includes(KEYWORD)
   )
 })
 
-/** ============================================================
- *  HANDLE CREATE GROUP – sử dụng API_ZALO
-=============================================================== */
+/**
+ * Xử lý tạo group trên Zalo
+ */
 async function handleCreateGroup() {
-  // reset error
-  errorGroupName.value = false
-  errorSelectMembers.value = ''
+  /** Reset lỗi */
+  error_group_name.value = false
+  error_select_members.value = ''
 
-  if (!groupName.value.trim()) {
-    errorGroupName.value = true
+  /** Kiểm tra tên group */
+  if (!group_name.value.trim()) {
+    error_group_name.value = true
     return
   }
-  if (selectedMembers.value.length < 2) {
-    errorSelectMembers.value = 'Vui lòng chọn ít nhất 2 thành viên'
+  /** Kiểm tra số lượng thành viên */
+  if (selected_members.value.length < 2) {
+    error_select_members.value = 'Vui lòng chọn ít nhất 2 thành viên'
     return
   }
 
-  // Lấy page_id mặc định
+  /** Lấy page_id mặc định (page đầu tiên) */
   const PAGE_IDS = keys(pageStore.selected_page_id_list)
-  const page_id = PAGE_IDS[0] || '' // lấy page đầu tiên
+  const page_id = PAGE_IDS[0] || ''
 
-  // Payload
-  const payload = {
-    group_name: groupName.value.trim(),
-    member_ids: selectedMembers.value.map(m => m.fb_client_id),
+  /** Payload gửi lên API Zalo */
+  const PAYLOAD = {
+    group_name: group_name.value.trim(),
+    member_ids: selected_members.value.map(m => m.fb_client_id),
     page_id,
   }
 
   try {
-    const data = await API_ZALO.createGroupZalo(payload)
-    console.log('Tạo group thành công:', data)
-    // Reset UI
-    groupName.value = ''
-    selectedMembers.value = []
+    /** Gọi API tạo group */
+    const DATA = await API_ZALO.createGroupZalo(PAYLOAD)
+    console.log('Tạo group thành công:', DATA)
+
+    /** Reset UI sau khi tạo thành công */
+    group_name.value = ''
+    selected_members.value = []
     modal_widget__group_ref.value?.toggleModal()
   } catch (err) {
     console.error('Lỗi khi tạo group:', err)
   }
 }
 
+/**
+ * Thêm/xóa thành viên trong danh sách selected_members
+ * @param conv conversation object
+ */
 function toggleMember(conv: any) {
-  errorSelectMembers.value = ''
-  const index = selectedMembers.value.findIndex(
+  /** Reset lỗi */
+  error_select_members.value = ''
+
+  /** Tìm index thành viên đã chọn */
+  const INDEX = selected_members.value.findIndex(
     m =>
       m.fb_client_id === conv.fb_client_id && m.fb_page_id === conv.fb_page_id
   )
-  if (index >= 0) {
-    selectedMembers.value.splice(index, 1)
+
+  /** Nếu đã chọn, xóa; nếu chưa chọn, push vào mảng */
+  if (INDEX >= 0) {
+    selected_members.value.splice(INDEX, 1)
   } else {
-    selectedMembers.value.push(conv)
+    selected_members.value.push(conv)
   }
 }
 
-/** Expose toggleModal cho component cha */
+/** Expose toggleModal ra component cha để gọi trực tiếp */
 defineExpose({ toggleModal: $main.toggleModal.bind($main) })
 </script>

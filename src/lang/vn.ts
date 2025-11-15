@@ -136,6 +136,7 @@ const source: Language = {
       your_group_name: 'Tên nhóm của bạn',
       create_zalo_group: 'Tạo nhóm Zalo',
       member_selected: 'Đã chọn',
+      no_data: 'Không có thành viên',
 
       unsupport_message:
         'Nội dung tin nhắn này hiện tại chưa thể hiển thị được, vui lòng liên hệ với quản trị viên hệ thống',
