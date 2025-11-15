@@ -72,8 +72,9 @@ const client_id = computed(() => conversation.value?.fb_client_id)
 const ai_answer = computed({
   get: () => conversation.value?.ai_answer,
   set: (value?: string) => {
-    // ghi đè câu trả lời vào store
+    /** ghi đè câu trả lời vào store */
     set(conversationStore, 'select_conversation.ai_answer', value)
+
     set(
       conversationStore.conversation_list,
       [conversationStore.select_conversation?.data_key || '', 'ai_answer'],
@@ -105,32 +106,32 @@ class Main {
    * - chỉ xử lý nếu là câu trả lời của khách hàng
    */
   onSocketMessage({ detail: message }: ISocketMessagePayload) {
-    // nếu không có dữ liệu thì thôi
+    /** nếu không có dữ liệu thì thôi */
     if (!message) return
 
-    // nếu không phải tin nhắn của khách hàng đang chọn thì bỏ qua
+    /** nếu không phải tin nhắn của khách hàng đang chọn thì bỏ qua */
     if (client_id.value !== message.fb_client_id) return
 
-    // chỉ xử lý nếu là tin nhắn của khách hàng
+    /** chỉ xử lý nếu là tin nhắn của khách hàng */
     if (message?.message_type !== 'client') return
 
-    // xử lý trường hợp khách nhắn tin dồn dập, để tránh spam ai quá nhiều
+    /** xử lý trường hợp khách nhắn tin dồn dập, để tránh spam ai quá nhiều */
     this.debounceGenAnswer()
   }
   /**hoàn thành câu */
   @loadingV2(is_loading, 'value')
   @error(container.resolve(CustomToast))
   async complete() {
-    // phải bật thiết lập thì mới cho chạy
+    /** phải bật thiết lập thì mới cho chạy */
     if (!conversationStore.getPage()?.quick_reply?.is_complete_sentence) return
 
-    // nếu không có id của page hoặc khách hàng thì thôi
+    /** nếu không có id của page hoặc khách hàng thì thôi */
     if (!page_id.value || !client_id.value) return
 
     /**input chat */
     const INPUT_CHAT = document.getElementById('chat-text-input-message')
 
-    // nếu không có input chat thì thôi
+    /** nếu không có input chat thì thôi */
     if (!INPUT_CHAT) throw 'DONE'
 
     /**nội dung chat */
@@ -147,46 +148,46 @@ class Main {
     /**nội dung chat */
     let text = INPUT_CHAT?.innerText?.trim()
 
-    // gọi api tạo nội dung
+    /** gọi api tạo nội dung */
     const RES = await gen_answer({
       source: SOURCE,
-      // sử dụng thủ thuật để làm ai luôn trả ra nội dung
+      /** sử dụng thủ thuật để làm ai luôn trả ra nội dung */
       current: text || '  ',
       page_id: page_id.value,
       client_id: client_id.value,
     })
 
-    // cập nhật câu trả lời nếu có
+    /** cập nhật câu trả lời nếu có */
     if (RES?.text) ai_answer.value = RES?.text
   }
   /**chọn câu trả lời */
   selectAiAnswer() {
-    // nếu không có câu trả lời của ai thì thôi
+    /** nếu không có câu trả lời của ai thì thôi */
     if (!conversationStore.select_conversation?.ai_answer) return
 
-    // ghi đè nội dung vào ô chat
+    /** ghi đè nội dung vào ô chat */
     this.SERVICE_INPUT.setInputText(
       conversationStore.select_conversation?.ai_answer
     )
 
-    // xóa câu trả lời của ai hiện tại
+    /** xóa câu trả lời của ai hiện tại */
     conversationStore.select_conversation.ai_answer = ''
   }
 }
 const $main = new Main()
 
-// lắng nghe sự kiện từ socket khi component được tạo ra
+/** lắng nghe sự kiện từ socket khi component được tạo ra */
 onMounted(() => {
-  // tin nhắn mới
+  /** tin nhắn mới */
   window.addEventListener(
     'chatbox_socket_message',
     $main.onSocketMessage.bind($main)
   )
 })
 
-// hủy lắng nghe sự kiện từ socket khi component bị hủy
+/** hủy lắng nghe sự kiện từ socket khi component bị hủy */
 onUnmounted(() => {
-  // tin nhắn mới
+  /** tin nhắn mới */
   window.removeEventListener(
     'chatbox_socket_message',
     $main.onSocketMessage.bind($main)
@@ -197,22 +198,22 @@ watch(
   () => messageStore.list_message,
   async (new_val, old_val) => {
     setTimeout(() => {
-      // bỏ qua nếu
+      /** bỏ qua nếu */
       if (
-        // danh sách tin nhắn trước đó có dữ liệu
+        /** danh sách tin nhắn trước đó có dữ liệu */
         old_val?.length &&
-        // là của cùng 1 hội thoại
+        /** là của cùng 1 hội thoại */
         last(old_val)?.fb_client_id === last(new_val)?.fb_client_id
       )
         return
 
-      // nếu đã có câu trả lời thì thôi
+      /** nếu đã có câu trả lời thì thôi */
       if (conversationStore.select_conversation?.ai_answer) return
 
-      // chỉ xử lý khi tin cuối cùng là của khách hàng
+      /** chỉ xử lý khi tin cuối cùng là của khách hàng */
       if (last(new_val)?.message_type !== 'client') return
 
-      // xử lý trường hợp khách nhắn tin dồn dập, để tránh spam ai quá nhiều
+      /** xử lý trường hợp khách nhắn tin dồn dập, để tránh spam ai quá nhiều */
       $main.debounceGenAnswer()
     }, 1000)
   }

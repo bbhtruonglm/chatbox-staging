@@ -186,7 +186,7 @@ const is_loading_unread_conversation = ref(false)
 /** trạng thái của tài khoản hiện tại có phải là admin hay ko? */
 const is_admin = computed(() => conversationStore.isCurrentStaffAdmin())
 
-// lắng nghe trạng thái của phím tắt
+/** lắng nghe trạng thái của phím tắt */
 watch(
   () => commonStore.keyboard_shortcut,
   value => {
@@ -197,14 +197,14 @@ watch(
     /** toggle block người dùng */
     const IS_TOGGLE_BLOCK_USER = value === 'toggle_block_user'
 
-    // nếu không phải các hành động thực hiện trong module thì thôi
+    /** nếu không phải các hành động thực hiện trong module thì thôi */
     if (!IS_VIEW_CLIENT_INFO && !IS_TOGGLE_UNREAD && !IS_TOGGLE_BLOCK_USER)
       return
 
-    // nếu là xem thông tin
+    /** nếu là xem thông tin */
     if (IS_VIEW_CLIENT_INFO) client_menu_ref.value?.openClientInfo()
 
-    // nếu là toggle trạng thái đọc
+    /** nếu là toggle trạng thái đọc */
     if (IS_TOGGLE_UNREAD) {
       /** hội thoại được chọn */
       const SELECTED = conversationStore.select_conversation
@@ -212,28 +212,27 @@ watch(
       /** danh sách hội thoại */
       const CONVERSATION_LIST = conversationStore.conversation_list
 
-      // nếu là đã đọc
+      /** nếu là đã đọc */
       if (!SELECTED?.is_force_unread) {
-        // gọi api đánh dấu hội thoại chưa đọc
+        /** gọi api đánh dấu hội thoại chưa đọc */
         $main.unreadConversation()
-      }
-      // nếu là chưa đọc
-      else {
+      } else {
+        /** nếu là chưa đọc */
         /** id của hội thoại đang chọn */
         const KEY = SELECTED?.data_key || ''
 
-        // chọn lại hội thoại này
+        /** chọn lại hội thoại này */
         selectConversation(CONVERSATION_LIST?.[KEY])
       }
     }
 
-    // nếu là toggle block người dùng
+    /** nếu là toggle block người dùng */
     if (IS_TOGGLE_BLOCK_USER) {
-      // gọi api block người dùng
+      /** gọi api block người dùng */
       client_menu_ref.value?.toggleSpam()
     }
 
-    // clear data
+    /** clear data */
     commonStore.keyboard_shortcut = ''
   }
 )
@@ -253,13 +252,13 @@ class Main {
   @error($toast)
   /**đánh dấu hội thoại này là chưa đọc */
   async unreadConversation() {
-    // nếu không có hội thoại nào đang chọn thì thoát
+    /** nếu không có hội thoại nào đang chọn thì thoát */
     if (!conversationStore.select_conversation) return
 
-    // * gắn cờ hội thoại chưa đọc, để không bị conflig vào code hiện thị
+    /** * gắn cờ hội thoại chưa đọc, để không bị conflig vào code hiện thị */
     conversationStore.select_conversation.is_force_unread = true
 
-    // gọi api đánh dấu hội thoại chưa đọc
+    /** gọi api đánh dấu hội thoại chưa đọc */
     await new N4SerivceAppOneConversation(
       conversationStore.select_conversation.fb_page_id,
       conversationStore.select_conversation.fb_client_id
@@ -269,17 +268,17 @@ class Main {
 
 /** Hàm mở danh sách điện thoại khi người dùng click */
 function toggleListPhone(event: MouseEvent) {
-  // Gọi phương thức toggle() trên component được tham chiếu bằng phone_list_ref
-  // Nếu component tồn tại, truyền vào MouseEvent để xử lý tương tác
+  /** Gọi phương thức toggle() trên component được tham chiếu bằng phone_list_ref */
+  /** Nếu component tồn tại, truyền vào MouseEvent để xử lý tương tác */
   phone_list_ref.value?.toggle(event)
 }
 
 /**kiểm tra xem có đang tìm uid không */
 function isFindUid() {
-  // nếu không có key thì dừng
+  /** nếu không có key thì dừng */
   if (!conversationStore.select_conversation?.data_key) return false
 
-  // trả về trạng thái tìm uid
+  /** trả về trạng thái tìm uid */
   return extensionStore.is_find_uid[
     conversationStore.select_conversation?.data_key
   ]
@@ -287,11 +286,11 @@ function isFindUid() {
 
 /** click vào avatar */
 function clickAvatar() {
-  // nếu đang có dữ liệu của khách hàng nhận được từ ext
+  /** nếu đang có dữ liệu của khách hàng nhận được từ ext */
   if (conversationStore.select_conversation?.has_new_info_from_ext) {
     conversationStore.select_conversation.has_new_info_from_ext = false
   }
-  // mở modal xem thông tin người dùng
+  /** mở modal xem thông tin người dùng */
   client_menu_ref.value?.openClientInfo()
 }
 

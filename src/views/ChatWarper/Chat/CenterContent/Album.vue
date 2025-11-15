@@ -31,6 +31,14 @@
               {{ $t('v1.view.main.dashboard.chat.album.category.folder') }}
             </button>
           </div>
+
+          <input
+            v-model="search_text"
+            @input="handleInput"
+            class="border rounded-lg px-3 py-1 text-sm"
+            :placeholder="$t('v1.view.main.dashboard.chat.album.search')"
+          />
+
           <div class="flex gap-2 items-center text-sm">
             {{
               $t(
@@ -130,8 +138,8 @@
             </button>
           </div>
         </div>
+        <!-- @scroll="loadMore" -->
         <div
-          @scroll="loadMore"
           class="flex-grow overflow-y-auto grid content-start gap-3"
           :class="{
             'grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7':
@@ -225,13 +233,37 @@
             </div>
           </div>
         </div>
-        <p
-          v-if="countSelectFile()"
-          class="m-auto text-sm text-blue-700 font-medium"
-        >
-          {{ $t('Đã chọn') }} {{ countSelectFile() }} / {{ size(file_list) }}
-          {{ $t('v1.view.main.dashboard.chat.album.file') }}
-        </p>
+        <div class="w-full text-right">
+          <Pagination
+            :current-page-parent="current_page + 1"
+            :is-next-page="!is_done"
+            :is-loading="is_loading"
+            :on-page-change="handlePageChange"
+          />
+        </div>
+        <div class="mx-auto text-xs text-slate-800">
+          <p
+            v-if="countSelectFile()"
+            class="text-sm text-blue-700 font-medium text-center"
+          >
+            {{ $t('Đã chọn') }} {{ countSelectFile() }} / {{ size(file_list) }}
+            {{ $t('v1.view.main.dashboard.chat.album.file') }}
+          </p>
+          <p>
+            {{
+              size(file_list) >= 80
+                ? $t('v1.view.main.dashboard.chat.album.album_desc')
+                : ''
+            }}
+          </p>
+          <p>
+            {{
+              size(file_list) >= 80
+                ? $t('v1.view.main.dashboard.chat.album.album_desc_2')
+                : ''
+            }}
+          </p>
+        </div>
       </div>
     </template>
     <template v-slot:footer>
@@ -282,8 +314,8 @@
   </Dropdown>
   <ModalChangeAlbumSource
     ref="modal_change_album_ref"
-    v-model:page_id="page_id"
-    v-on:update:page_id="onChangePageId"
+    v-model:page_ids="page_ids"
+    v-on:update:page_ids="onChangePageIds"
   />
 </template>
 <script setup lang="ts">
@@ -301,7 +333,16 @@ import {
 import { useConversationStore, useOrgStore } from '@/stores'
 import { confirm, toast, toastError } from '@/service/helper/alert'
 import { useI18n } from 'vue-i18n'
-import { remove, size } from 'lodash'
+import {
+  debounce,
+  first,
+  get,
+  isArray,
+  isEmpty,
+  keys,
+  remove,
+  size,
+} from 'lodash'
 
 import Modal from '@/components/Modal.vue'
 import Loading from '@/components/Loading.vue'
@@ -327,6 +368,8 @@ import { ArrowLeftIcon, LinkIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 import { getItem, setItem } from '@/service/helper/localStorage'
 import ModalChangeAlbumSource from './ModalChangeAlbumSource.vue'
+import Pagination from './Pagination.vue'
+import { normalizeFileName, normalizePageIds } from '@/utils/helper/Validate'
 
 /**các giá tị của danh mục */
 type CategoryType = 'NEW' | 'FOLDER'
@@ -343,7 +386,82 @@ const orgStore = useOrgStore()
 const CACHE_LIST_ALBUM = new Map<string, any[]>()
 
 /**số bản ghi một thời điểm */
-const LIMIT = 40
+const LIMIT = 80
+
+/** Trang hiện tại (bắt đầu từ 0 hoặc 1, tùy backend) */
+const current_page = ref(0)
+
+/**
+ *  Xác định `page_id` hợp lệ để thao tác album
+ *
+ * @description
+ * Hàm này tìm ra `page_id` ưu tiên sử dụng theo thứ tự:
+ * 1. Nếu localStorage (`album_page_id`) có chứa mảng tương ứng với `fb_page_id` hiện tại → lấy phần tử đầu tiên.
+ * 2. Nếu không có `fb_page_id` trong map → lấy key đầu tiên trong map và dùng phần tử đầu tiên trong mảng đó.
+ * 3. Nếu map trống → trả về ID mặc định (fb_page_id hoặc chuỗi rỗng).
+ *
+ * @returns {string} `new_page_id` — ID trang hợp lệ để thao tác.
+ *
+ * @example
+ * const pageId = resolvePageIdForAlbum();
+ * create_folder_album({ page_id: pageId, title: "New Folder" });
+ */
+function resolvePageIdForAlbum(): string {
+  /** Lấy dữ liệu map page_id từ localStorage */
+  const PAGE_ID_MAP = getItem('album_page_id') || {}
+
+  /** Lấy store hội thoại hiện tại */
+  const conversationStore = useConversationStore()
+
+  /** ID mặc định từ store (hoặc chuỗi rỗng nếu chưa có) */
+  const DEFAULT_ID: string =
+    conversationStore.select_conversation?.fb_page_id || ''
+
+  /** Biến kết quả khởi tạo bằng DEFAULT_ID */
+  let new_page_id: string = DEFAULT_ID
+
+  /** Kiểm tra map có dữ liệu không */
+  if (size(PAGE_ID_MAP) > 0) {
+    /** Lấy danh sách page tương ứng với DEFAULT_ID (nếu có) */
+    const DEFAULT_PAGE_LIST = get(PAGE_ID_MAP, DEFAULT_ID, [])
+
+    /** Nếu có danh sách hợp lệ → lấy phần tử đầu tiên */
+    if (isArray(DEFAULT_PAGE_LIST) && size(DEFAULT_PAGE_LIST) > 0) {
+      new_page_id = first(DEFAULT_PAGE_LIST) as string
+    } else {
+      /** Nếu không có DEFAULT_ID → chọn phần tử đầu tiên trong toàn bộ map */
+      const FIRST_KEY = first(keys(PAGE_ID_MAP))
+      if (FIRST_KEY) {
+        const FIRST_ARRAY = get(PAGE_ID_MAP, FIRST_KEY, [])
+        if (isArray(FIRST_ARRAY) && size(FIRST_ARRAY) > 0) {
+          new_page_id = first(FIRST_ARRAY) as string
+        }
+      }
+    }
+  }
+
+  /** Trả về ID hợp lệ */
+  return new_page_id
+}
+
+/** Hàm xử lý khi chuyển trang
+ * @param page
+ * @param direction
+ */
+const handlePageChange = (page: number, direction: 'next' | 'prev') => {
+  /** Đang loading thì return */
+  if (is_loading.value) return
+  /** Nếu ấn next hoặc prev thì fix skip chuẩn theo số trang*/
+  if (direction === 'next') {
+    skip.value += LIMIT * current_page.value
+  } else if (direction === 'prev') {
+    skip.value =
+      LIMIT * (current_page.value - 1 > 0 ? current_page.value - 1 : 0)
+  }
+  /** Trang hiện tại (-1 vì index) */
+  current_page.value = page - 1
+  getFiles()
+}
 
 /**ref của menu thiết lập folder */
 const folder_menu_ref = ref<InstanceType<typeof Dropdown>>()
@@ -357,6 +475,8 @@ const selected_category = ref<CategoryType>('NEW')
 const selected_folder_id = ref<string>()
 /**danh sách tập tin */
 const file_list = ref<FileInfo[]>([])
+/**danh sách tập tin */
+const file_list_root = ref<FileInfo[]>([])
 /**danh sách thư mục */
 const folder_list = ref<FolderInfo[]>([])
 /**đánh dấu đã đọc hết dữ liệu */
@@ -368,63 +488,317 @@ const selected_folder = ref<FolderInfo>()
 
 /**id trang đang được chọn */
 const page_id = ref<string>('')
+/** Danh sách page_id */
+const page_ids = ref<string[] | undefined>([])
 
 /** modal thay đổi danh sách câu trả lời nhanh */
 const modal_change_album_ref = ref<InstanceType<
   typeof ModalChangeAlbumSource
 > | null>(null)
 
+/** --- state search */
+const search_text = ref('')
+
+/**
+ * Lọc danh sách album theo từ khóa tìm kiếm
+ *
+ * @description
+ * Hàm này tạm thời thực hiện lọc dữ liệu cục bộ (local filter) trên danh sách `file_list_root`,
+ * tương ứng với danh sách ảnh hoặc album gốc. Sau này có thể thay bằng API tìm kiếm thực tế.
+ *
+ * - Nếu `query` có giá trị → lọc danh sách theo tên gốc (`original_name`), không phân biệt hoa thường.
+ * - Nếu `query` rỗng → trả lại toàn bộ danh sách gốc.
+ *
+ * @param {string} query - Từ khóa tìm kiếm nhập vào từ người dùng.
+ *
+ * @returns {Promise<void>} Không trả về giá trị, chỉ cập nhật `file_list`.
+ */
+const fetchAlbums = async (query: string): Promise<void> => {
+  /** Kiểm tra có từ khóa tìm kiếm không */
+  if (query) {
+    /** Lọc danh sách file theo tên, chuyển về lowercase để so sánh không phân biệt hoa thường */
+    const DATA = file_list_root.value?.filter(item =>
+      item.original_name.toLowerCase().includes(query.toLowerCase())
+    )
+
+    /** Gán lại danh sách file hiển thị sau khi lọc */
+    file_list.value = DATA
+  } else {
+    /** Nếu không có từ khóa → hiển thị lại toàn bộ danh sách gốc */
+    file_list.value = file_list_root.value
+  }
+}
+
+/** handle debounce input */
+const handleInput = debounce(e => {
+  /** Gọi album */
+  fetchAlbums(e.target.value)
+}, 500)
+
 /**đánh dấu có đang chọn tất cả file không */
 const is_select_all = computed({
   get() {
-    // kiểm tra xem có phải đang chọn toàn bộ file không
+    /** kiểm tra xem có phải đang chọn toàn bộ file không */
     return (
       !!size(file_list.value) && size(file_list.value) === countSelectFile()
     )
   },
   set(val) {
-    // gắn cờ cho các file
+    /** gắn cờ cho các file */
     file_list.value?.forEach(file => (file.is_select = val))
+    file_list_root.value?.forEach(file => (file.is_select = val))
   },
 })
 
-/** hàm xử lý thay đổi id page */
-function onChangePageId(id: string) {
-  /** Nếu k có id thì bỏ quá */
-  if (!id || !conversationStore.select_conversation?.fb_page_id) return
+function onChangePageIds(ids: string[]) {
+  /** Nếu không có ids thì return */
+  if (!ids?.length || !conversationStore.select_conversation?.fb_page_id) return
+  /** Lưu giá trị page_ids từ props đầu vào */
+  page_ids.value = ids
 
-  /** cập nhật id page */
-  page_id.value = id
-  /** Map data id từ local storage */
+  /** Lưu vào local storage (nếu bạn muốn) */
   const PAGE_ID_MAP = getItem('album_page_id') || {}
-  /** Lưu vào local, */
+  /** Lưu vào local */
   setItem('album_page_id', {
     ...PAGE_ID_MAP,
-    [conversationStore.select_conversation.fb_page_id]: id,
+    [conversationStore.select_conversation.fb_page_id]: ids,
   })
-  /** set lại skip = 0 */
+  /** Reset skip */
   skip.value = 0
-  /** check tab hiện tại */
+  /** Chọn trạng thái file hoặc folder */
   if (selected_category.value === 'NEW') {
-    /** lấy dữ liệu album */
-    getFile(true)
+    folder_list.value = []
+    getFiles(true, ids)
   } else {
-    getFolder(true)
+    file_list.value = []
+    getFolders(true, ids)
   }
+}
+
+/**
+ * Lấy danh sách file (ảnh/video) từ album của một hoặc nhiều trang.
+ *
+ * @function getFiles
+ * @param {boolean} [is_change_page=false] - Có phải đang chuyển trang (thay đổi page_id)?
+ *   - `true` → thay thế toàn bộ danh sách file hiện tại.
+ *   - `false` → thêm dữ liệu (ví dụ khi load thêm).
+ * @param {string[]} [ids=[]] - Danh sách `page_id` được truyền thủ công (override dữ liệu local).
+ *
+ * @description
+ * Quy trình:
+ * 1. Lấy danh sách `page_id` từ localStorage (`album_page_id`) dựa theo trang hiện tại.
+ * 2. Chuẩn hóa dữ liệu (dạng chuỗi, mảng, hoặc ký tự rời) thành `string[]` hợp lệ.
+ * 3. Gọi API `read_file_album()` để lấy danh sách file.
+ * 4. Cập nhật danh sách file, trạng thái tải (loading/done), và hỗ trợ phân trang.
+ */
+function getFiles(is_change_page = false, ids: string[] = []) {
+  /** Lấy dữ liệu map page_id từ localStorage */
+  const PAGE_ID_MAP = getItem('album_page_id') || {}
+
+  /** Lấy page_id của cuộc hội thoại hiện tại */
+  const CURRENT_PAGE_ID =
+    conversationStore.select_conversation?.fb_page_id || ''
+
+  /** Lấy danh sách page_id đã lưu trong localStorage (có thể là chuỗi hoặc mảng) */
+  let stored_page_ids = PAGE_ID_MAP?.[CURRENT_PAGE_ID] || CURRENT_PAGE_ID
+
+  /** Áp dụng normalize để luôn có mảng string[] chuẩn */
+  const NORMALIZED = normalizePageIds(stored_page_ids)
+
+  /** Gán vào reactive state (page_ids) */
+  page_ids.value = NORMALIZED
+
+  /** Nếu không có page_id hợp lệ thì dừng */
+  if (!page_ids.value?.length) return
+
+  /** Đặt trạng thái tải */
+  is_loading.value = true
+  is_done.value = false
+
+  /**
+   * Thực hiện tuần tự 2 bước bằng async.waterfall:
+   *
+   * Gọi API `read_file_album` để lấy dữ liệu file.
+   * Sau khi hoàn tất → cập nhật trạng thái tải và danh sách.
+   */
+  waterfall(
+    [
+      /**
+       * Bước 1: Gọi API đọc dữ liệu file theo page_id.
+       */
+      (cb: CbError) =>
+        read_file_album(
+          {
+            /**
+             * Danh sách page_id cần lấy:
+             * - Nếu có `ids` truyền vào → ưu tiên dùng.
+             * - Ngược lại dùng `page_ids.value` từ local.
+             */
+            page_id: !isEmpty(ids) ? ids : page_ids.value || [],
+            folder_id: selected_folder_id.value,
+            limit: LIMIT,
+            skip: skip.value /** offset được handle bởi handlePageChange */,
+          },
+          (e, r) => {
+            if (e) return cb(e)
+
+            /** Nếu dữ liệu ít hơn LIMIT => không còn trang tiếp theo */
+            is_done.value = !r?.length || r.length < LIMIT
+
+            /** Cập nhật giá trị skip để load tiếp lần sau */
+            skip.value = skip.value + Number(r?.length) || 0
+
+            if (is_change_page) {
+              /**
+               * Khi chuyển sang trang mới → replace toàn bộ file cũ.
+               */
+              file_list.value = (r as FileInfo[]).map(file => ({
+                ...file,
+                is_select: is_select_all.value,
+              }))
+              file_list_root.value = (r as FileInfo[]).map(file => ({
+                ...file,
+                is_select: is_select_all.value,
+              }))
+            } else {
+              /**
+               * Khi load thêm (scroll xuống cuối danh sách) → append dữ liệu.
+               */
+              addDataToFileList(r)
+            }
+
+            cb()
+          }
+        ),
+      /** Bước 2: Callback kết thúc waterfall */
+      (cb: any) => cb(),
+    ],
+    /**
+     *  Hoàn tất toàn bộ luồng (thành công hoặc lỗi)
+     */
+    e => {
+      is_loading.value = false
+      if (e) toastError(e)
+    }
+  )
+}
+
+/**
+ * Lấy danh sách thư mục (album folder) từ các trang được chọn.
+ *
+ * @function getFolders
+ * @param {boolean} [is_change_page=false] - Cờ báo hiệu có phải đang chuyển trang hay không.
+ *   - `true`: Thay thế toàn bộ danh sách thư mục hiện tại.
+ *   - `false`: Thêm dữ liệu mới vào danh sách hiện tại.
+ * @param {string[]} [ids=[]] - Danh sách `page_id` được truyền thủ công (nếu cần override dữ liệu từ local).
+ *
+ * @description
+ * Quy trình:
+ * 1. Đọc danh sách `page_id` từ localStorage (`album_page_id`).
+ * 2. Chuẩn hóa dữ liệu để đảm bảo luôn là `string[]` hợp lệ.
+ * 3. Gọi API `read_folder_album()` để lấy danh sách folder (album).
+ * 4. Cập nhật `folder_list`, trạng thái tải (`is_loading`, `is_done`) và phân trang (`skip`).
+ */
+function getFolders(is_change_page = false, ids: string[] = []) {
+  /**  Lấy dữ liệu map page_id từ localStorage */
+  const PAGE_ID_MAP = getItem('album_page_id') || {}
+
+  /**  Lấy page_id của cuộc hội thoại hiện tại */
+  const CURRENT_PAGE_ID =
+    conversationStore.select_conversation?.fb_page_id || ''
+
+  /**  Lấy dữ liệu page_id đã lưu trong localStorage (có thể là chuỗi hoặc mảng) */
+  let stored_page_ids = PAGE_ID_MAP?.[CURRENT_PAGE_ID] || CURRENT_PAGE_ID
+
+  /**  Chuẩn hóa dữ liệu page_id */
+  const NORMALIZED = normalizePageIds(stored_page_ids)
+
+  /**  Gán lại vào reactive state */
+  page_ids.value = NORMALIZED
+
+  /**  Nếu không có id hợp lệ thì dừng */
+  if (!page_ids.value?.length) return
+
+  /**  Bắt đầu tải dữ liệu */
+  is_loading.value = true
+  is_done.value = false
+
+  /**
+   *  Dùng waterfall để thực hiện tuần tự:
+   *  Gọi API lấy folder album.
+   *  Cập nhật danh sách và trạng thái tải.
+   */
+  waterfall(
+    [
+      /**
+       * Bước 1: Gọi API đọc danh sách folder.
+       */
+      (cb: any) =>
+        read_folder_album(
+          {
+            /**
+             * Nếu có `ids` truyền vào → dùng nó,
+             * ngược lại dùng `page_ids.value` từ local.
+             */
+            page_id: !isEmpty(ids) ? ids : page_ids.value || [],
+            limit: LIMIT,
+            skip: skip.value,
+          },
+          (e, r) => {
+            if (e) return cb(e)
+
+            console.log(r, 'rrrrrr')
+
+            /** Nếu dữ liệu ít hơn LIMIT => không còn trang kế tiếp */
+            if (!r?.length || r.length < LIMIT) is_done.value = true
+
+            if (is_change_page) {
+              /**
+               * Khi chuyển trang → thay toàn bộ danh sách cũ.
+               */
+              folder_list.value = r as FolderInfo[]
+            } else {
+              /**
+               * Khi load thêm → nối thêm dữ liệu vào danh sách cũ.
+               */
+              folder_list.value.push(...(r as FolderInfo[]))
+            }
+
+            cb()
+          }
+        ),
+
+      /**
+       * Bước 2: Sau khi thành công → cập nhật skip.
+       */
+      (cb: any) => {
+        skip.value += LIMIT
+        cb()
+      },
+    ],
+
+    /**
+     * Hoàn tất toàn bộ quá trình (có thể thành công hoặc lỗi).
+     */
+    e => {
+      is_loading.value = false
+      if (e) toastError(e)
+    }
+  )
 }
 
 /**đổi chế độ sửa tên thư mục */
 function editFolderName() {
-  // nếu chưa chọn thư mục thì thôi
+  /** nếu chưa chọn thư mục thì thôi */
   if (!selected_folder.value) return
 
-  // bật chế độ sửa
+  /** bật chế độ sửa */
   selected_folder.value.is_edit = true
 
-  // tắt menu
+  /** tắt menu */
   folder_menu_ref.value?.toggleDropdown()
 
-  // focus vào input
+  /** focus vào input */
   nextTick(() =>
     document
       .getElementById(`edit-folder-title-${selected_folder.value?._id}`)
@@ -433,10 +807,10 @@ function editFolderName() {
 }
 /** Mở menu */
 function openFolderMenu($event: MouseEvent, folder: FolderInfo) {
-  // chọn thư mục
+  /** chọn thư mục */
   selected_folder.value = folder
 
-  // mở menu
+  /** mở menu */
   folder_menu_ref.value?.toggleDropdown($event)
 }
 /**đếm số file được chọn */
@@ -449,58 +823,16 @@ function selectFile(file: FileInfo) {
 }
 /**chọn thư mục */
 function selectFolder(folder: FolderInfo) {
+  /** Lưu folder id */
   selected_folder_id.value = folder._id
-
+  /** Lưu folder đã chọn */
   selected_folder.value = folder
-
+  /** Reset file */
   resetFileData()
-
-  getFile()
+  /** call api lấy file */
+  getFiles()
 }
-/**đọc danh sách thư mục */
-function getFolder(is_change_page = false) {
-  is_loading.value = true
 
-  waterfall(
-    [
-      // * đọc thư mục từ server
-      (cb: CbError) =>
-        read_folder_album(
-          {
-            // page_id: conversationStore.select_conversation
-            //   ?.fb_page_id as string,
-            page_id: page_id.value,
-            limit: LIMIT,
-            skip: skip.value,
-          },
-          (e, r) => {
-            if (e) return cb(e)
-            if (!r?.length || r?.length < LIMIT) is_done.value = true
-
-            if (r) {
-              if (is_change_page) {
-                folder_list.value = r
-              } else {
-                folder_list.value?.push(...r)
-              }
-            }
-            cb()
-          }
-        ),
-      // * next
-      (cb: CbError) => {
-        skip.value += LIMIT
-
-        cb()
-      },
-    ],
-    e => {
-      is_loading.value = false
-
-      if (e) return toastError(e)
-    }
-  )
-}
 /**chọn danh mục */
 function selectCategory(type: CategoryType) {
   /** chọn danh mục */
@@ -511,29 +843,11 @@ function selectCategory(type: CategoryType) {
   /** clar file dữ liệu */
   resetFileData()
   /** type File thì lấy file */
-  if (type === 'NEW') getFile()
+  if (type === 'NEW') getFiles()
   /** Type folder thì lấy data folder */
-  if (type === 'FOLDER') getFolder()
+  if (type === 'FOLDER') getFolders()
 }
-/**lấy thêm dữ liệu file khi scroll xuống */
-function loadMore($event: Event) {
-  /** nếu đang chạy hoặc đã hết dữ liệu thì thôi */
-  if (is_loading.value || is_done.value) return
-  /** Lấyd data div */
-  const DIV = $event.target as HTMLElement
-  /** Khai báo các event stroll của div */
-  const SCROLL_TOP = DIV?.scrollTop
-  const DIV_HEIGHT = DIV?.offsetHeight
-  const SCROLL_HEIGHT = DIV?.scrollHeight
 
-  /** kiểm tra xem đã scroll xuống cuối cùng chưa */
-  if (SCROLL_TOP + DIV_HEIGHT < SCROLL_HEIGHT - 100) return
-
-  /** nếu ở danh mục hiện toàn bộ file */
-  if (selected_category.value === 'NEW') getFile()
-  /** nếu ở danh sách thư mục */ else if (!selected_folder_id) getFolder()
-  /** nếu là danh sách các file của một thư mục */ else getFile()
-}
 /**xoá tập tin */
 function deleteFile(select_file: FileInfo) {
   /** nếu đang chạy thì thôi */
@@ -542,11 +856,14 @@ function deleteFile(select_file: FileInfo) {
   /** gắn cờ đang chạy */
   is_loading.value = true
 
+  /** Xác định page_id hợp lệ */
+  const NEW_PAGE_ID = resolvePageIdForAlbum()
+
   /** xoá file */
   delete_file_album(
     {
       // page_id: conversationStore.select_conversation?.fb_page_id!,
-      page_id: page_id.value,
+      page_id: NEW_PAGE_ID,
       file_id: select_file._id,
     },
     (e, r) => {
@@ -554,6 +871,7 @@ function deleteFile(select_file: FileInfo) {
 
       /** xoá khỏi danh sách tập tin */
       remove(file_list.value, file => file._id === select_file?._id)
+      remove(file_list_root.value, file => file._id === select_file?._id)
     }
   )
 }
@@ -590,6 +908,7 @@ async function deleteSelectFile() {
                 resolve(r)
                 /** xóa khoa khoi danh sach */
                 file_list.value?.splice(i, 1)
+                file_list_root.value?.splice(i, 1)
               }
             }
           )
@@ -611,40 +930,43 @@ function confirmDeleteFile() {
     $t('v1.view.main.dashboard.chat.album.confirm_delete_file'),
     '',
     is_cancel => {
-      // nếu hủy thì thôi
+      /** nếu hủy thì thôi */
       if (is_cancel) return
-      // xóa các tập tin đã chọn
+      /** xóa các tập tin đã chọn */
       deleteSelectFile()
     }
   )
 }
 
-/**tạo mới thư mục */
-function createFolder() {
-  /** bật cờ đang chạy */
+/**
+ * Tạo mới một thư mục (album) cho trang Facebook đang được chọn.
+ */
+function createFolder(): void {
+  /** Bật cờ đang chạy */
   is_loading.value = true
 
-  /** tạo thư mục */
+  /** Xác định page_id hợp lệ */
+  const NEW_PAGE_ID = resolvePageIdForAlbum()
+
+  /** Gọi API tạo mới thư mục */
   create_folder_album(
     {
-      // page_id: conversationStore.select_conversation?.fb_page_id as string,
-      page_id: page_id.value,
+      page_id: NEW_PAGE_ID,
       title: $t('v1.view.main.dashboard.chat.album.folder_new_name'),
     },
     (e, r) => {
-      /** tắt cờ đang chạy */
+      /** Tắt cờ đang chạy */
       is_loading.value = false
 
-      /** reset dữ liệu */
+      /** Reset dữ liệu và gọi lại danh sách */
       folder_list.value = []
       skip.value = 0
       is_done.value = false
-
-      /** lấy lại danh sách thư mục */
-      getFolder()
+      getFolders()
     }
   )
 }
+
 /**xoá thư mục */
 function deleteFolder() {
   /** nếu chưa chọn thư mục thì thôi */
@@ -653,11 +975,14 @@ function deleteFolder() {
   /** gắn cờ đang chạy */
   is_loading.value = true
 
+  /** Xác định page_id hợp lệ */
+  const NEW_PAGE_ID = resolvePageIdForAlbum()
+
   /** xoá thư mục */
   delete_folder_album(
     {
       // page_id: conversationStore.select_conversation?.fb_page_id!,
-      page_id: page_id.value,
+      page_id: NEW_PAGE_ID,
       folder_id: selected_folder.value?._id,
     },
     (e, r) => {
@@ -683,11 +1008,14 @@ function updateFolderInfo(folder: FolderInfo) {
   /** gắn cờ đang chạy */
   is_loading.value = true
 
+  /** Xác định page_id hợp lệ */
+  const NEW_PAGE_ID = resolvePageIdForAlbum()
+
   /** cập nhật thông tin thư mục */
   update_folder_album(
     {
       // page_id: conversationStore.select_conversation?.fb_page_id as string,
-      page_id: page_id.value,
+      page_id: folder.fb_page_id || NEW_PAGE_ID,
       folder_id: folder?._id,
       title: folder?.title,
     },
@@ -702,16 +1030,16 @@ function updateFolderInfo(folder: FolderInfo) {
 }
 /**lấy các tập tin đưa vào danh sách gửi */
 function pickFile() {
-  // đóng modal
+  /** đóng modal */
   album_ref.value.toggleModal()
 
-  // lấy dữ liệu của file được chọn
+  /** lấy dữ liệu của file được chọn */
   $emit(
     'pick_file',
     file_list.value?.filter(file => file.is_select)
   )
 
-  // huỷ bỏ file được chọn
+  /** huỷ bỏ file được chọn */
   selectAllFile(false)
 }
 /**chọn/huỷ chọn toàn bộ tập tin */
@@ -723,35 +1051,24 @@ function resetFileData() {
   is_done.value = false
   skip.value = 0
   file_list.value = []
+  file_list_root.value = []
   folder_list.value = []
 }
 /**mở album */
 function toggleAlbum() {
   album_ref.value?.toggleModal()
 
-  // chuyển danh mục về all
+  /** chuyển danh mục về all */
   selected_category.value = 'NEW'
 
-  // xoá thư mục đã chọn
+  /** xoá thư mục đã chọn */
   selected_folder_id.value = undefined
 
   resetFileData()
 
-  getFile()
+  getFiles()
 }
-/**thêm dữ liệu vào danh sách tập tin hiện tại */
-// function addDataToFileList(data?: FileInfo[]) {
-//   if (!data?.length) return
 
-//   file_list.value?.push(
-//     ...data?.map(file => {
-//       // thêm gắn cờ
-//       file.is_select = is_select_all.value
-
-//       return file
-//     })
-//   )
-// }
 /** Thêm dữ liệu vào đầu danh sách tập tin hiện tại */
 /**
  * Thêm dữ liệu vào danh sách tập tin hiện tại
@@ -763,144 +1080,107 @@ function addDataToFileList(
   source: 'fetch' | 'upload' = 'fetch'
 ) {
   if (!Array.isArray(data) || data.length === 0) return
+
   /** Tạo new file từ data đầu vào */
   const NEW_FILES = data.map(file => ({
     ...file,
     is_select: is_select_all.value,
   }))
+  if (data.length < LIMIT) {
+    is_done.value = true
+  }
   /** Check type action  */
   if (source === 'fetch') {
     /** fetch từ server → thêm cuối danh sách */
-    file_list.value = [...file_list.value, ...NEW_FILES]
+    file_list.value = [...NEW_FILES]
+    file_list_root.value = [...NEW_FILES]
+    // file_list.value = [...file_list.value, ...NEW_FILES]
+    // file_list_root.value = [...file_list_root.value, ...NEW_FILES]
   } else {
     /** upload mới → thêm đầu danh sách */
     file_list.value = [...NEW_FILES, ...file_list.value]
+    file_list_root.value = [...NEW_FILES, ...file_list_root.value]
   }
 }
 
-/**lấy danh sách tập tin */
-function getFile(is_change_page = false) {
-  /** lấy page_id từ local */
-  const PAGE_ID_MAP = getItem('album_page_id') || {}
-  /** Lấy giá trị của page_id */
-  page_id.value =
-    PAGE_ID_MAP?.[conversationStore.select_conversation?.fb_page_id || ''] ||
-    conversationStore.select_conversation?.fb_page_id
-
-  /** nếu không có id trang thì thôi */
-  if (!page_id.value) return
-
-  /** nếu đã cache dữ liệu rồi thì thôi không gọi api nữa */
-  if (CACHE_LIST_ALBUM.has(page_id.value)) {
-    /** lấy dữ liệu trong cache */
-    file_list.value = CACHE_LIST_ALBUM.get(page_id.value) || []
-
-    return
-  }
-  is_loading.value = true
-  waterfall(
-    [
-      /** đọc file từ server */
-      (cb: CbError) =>
-        read_file_album(
-          {
-            // page_id: conversationStore.select_conversation
-            //   ?.fb_page_id as string,
-            page_id: page_id.value,
-            folder_id: selected_folder_id.value,
-            limit: LIMIT,
-            skip: skip.value,
-          },
-          (e, r) => {
-            if (e) return cb(e)
-            if (!r?.length || r?.length < LIMIT) is_done.value = true
-            if (is_change_page) {
-              file_list.value = (r as FileInfo[])?.map(file => {
-                /** thêm gắn cờ */
-                file.is_select = is_select_all.value
-
-                return file
-              })
-
-              /** cache lại dữ liệu */
-              CACHE_LIST_ALBUM.set(page_id.value, file_list.value)
-            } else {
-              addDataToFileList(r)
-            }
-            cb()
-          }
-        ),
-      // * next
-      (cb: CbError) => {
-        skip.value += LIMIT
-
-        cb()
-      },
-    ],
-    e => {
-      is_loading.value = false
-
-      if (e) return toastError(e)
-    }
-  )
-}
 /**
- * chọn file từ thiết bị để thêm vào album
- * @deprecated dùng qua UploadFile ở utils
+ * Chọn file từ thiết bị để upload lên album.
+ * ⚠️ @deprecated: Hàm này đã lỗi thời, nên dùng `UploadFile` trong `utils` thay thế.
+ *
+ * - Tạo thẻ `<input type="file">` tạm thời để mở hộp chọn file của thiết bị.
+ * - Cho phép chọn nhiều file (multiple).
+ * - Chuẩn hóa tên file, tạo FormData và upload từng file theo thứ tự.
+ * - Tự động xác định `page_id` tương ứng để gửi file đúng album.
+ * - Hiển thị thông báo khi upload hoàn tất.
  */
 function uploadFileFromDevice() {
-  /**input upload file */
+  /** Tạo phần tử input ẩn để người dùng chọn file từ thiết bị */
   const INPUT = document.createElement('input')
-
-  /** thêm các thuộc tính cần thiết */
+  /** Cho phép chọn file */
   INPUT.type = 'file'
+  /** Cho phép chọn nhiều file cùng lúc */
   INPUT.multiple = true
+  /** Ẩn khỏi giao diện người dùng */
   INPUT.style.display = 'none'
 
-  /** hàm xử lý sau khi upload thành công */
+  /** Khi người dùng chọn file xong */
   INPUT.onchange = () => {
+    /**  fix null here */
+    if (!INPUT.files || INPUT.files.length === 0) return
+    /** Hiển thị trạng thái loading trong giao diện */
     is_loading.value = true
 
-    /** xử upload file */
+    /**
+     * Duyệt qua từng file theo giới hạn đồng thời là 1 (upload tuần tự),
+     * dùng `eachOfLimit` để xử lý bất đồng bộ có kiểm soát.
+     */
     eachOfLimit(
       INPUT.files,
       1,
       (file: File, i, next) => {
-        /**dữ liệu upload */
-        const FORM = new FormData()
-        FORM.append('file', file)
+        /** 🔹 Chuẩn hóa tên file để tránh lỗi ký tự đặc biệt */
+        const CLEAN_NAME = normalizeFileName(file.name)
 
-        /** upload lên server */
+        /** Tạo lại đối tượng File mới với tên đã chuẩn hóa */
+        const NEW_FILE = new File([file], CLEAN_NAME, { type: file.type })
+
+        /** Tạo FormData chứa file để upload */
+        const FORM = new FormData()
+        FORM.append('file', NEW_FILE)
+
+        /** Xác định page_id hợp lệ */
+        const NEW_PAGE_ID = resolvePageIdForAlbum()
+
+        /**
+         * Gọi API upload_file_album để tải file lên server.
+         * Truyền kèm page_id để xác định album đích.
+         * Khi upload xong, thêm file mới vào danh sách hiển thị.
+         */
         upload_file_album(
-          {
-            // page_id: conversationStore.select_conversation
-            //   ?.fb_page_id as string,
-            page_id: page_id.value,
-            folder_id: selected_folder_id.value,
-          },
+          { page_id: NEW_PAGE_ID, folder_id: selected_folder_id.value },
           FORM,
           (e, r) => {
-            if (r) addDataToFileList([r], 'upload')
-
-            next()
+            if (r)
+              addDataToFileList([r], 'upload') /** Cập nhật UI sau upload */
+            next() /** Tiếp tục upload file tiếp theo */
           }
         )
       },
+      /** Callback sau khi tất cả file đã upload xong */
       e => {
-        is_loading.value = false
-
-        toast('success', $t('v1.common.success'))
+        is_loading.value = false /** Tắt trạng thái loading */
+        toast('success', $t('v1.common.success')) /** Thông báo thành công */
       }
     )
 
-    /** xoá input sau khi xong việc */
+    /** Xóa thẻ input khỏi DOM để dọn dẹp bộ nhớ */
     if (INPUT && INPUT.parentNode) INPUT.parentNode.removeChild(INPUT)
   }
 
-  /** thêm input vào html */
+  /** Gắn thẻ input vào DOM tạm thời để trình duyệt nhận sự kiện click */
   document.body.appendChild(INPUT)
 
-  /** click vào input */
+  /** Kích hoạt click() để mở hộp thoại chọn file của hệ thống */
   INPUT.click()
 }
 

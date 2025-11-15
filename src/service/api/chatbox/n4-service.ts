@@ -14,6 +14,7 @@ import type {
   MessageInfo,
   QueryMessage,
   SendMesageInput,
+  SendMesageInputHorizontal,
 } from '@/service/interface/app/message'
 import type {
   QueryConversationInput,
@@ -62,12 +63,6 @@ export const read_me_chatbot_user = (
     },
     proceed
   )
-
-export const update_chatbot_user_info = async (body: { custom_id: string }) =>
-  chatboxSync({
-    uri: `${$env.host.n4_service_v2}/app/chatbot_user/update_chatbot_user_info`,
-    body,
-  })
 
 /**dữ liệu của trang hiện tại kích hoạt */
 export interface CurrentPageData {
@@ -405,7 +400,7 @@ export const toggle_spam_conversation = (
   )
 
 /**gửi tin nhắn đến khách hàng */
-export const send_message = (body: SendMesageInput, proceed: Cb) =>
+export const send_message = (body: SendMesageInputHorizontal, proceed: Cb) =>
   chatbox(
     {
       uri: `${$env.host.n4_service_v2}/app/message/send_message`,

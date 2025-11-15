@@ -329,6 +329,9 @@ const source: Language = {
       select_all: 'Select all',
       active: 'Activate',
       chatbox: 'Chatbox',
+      add_customer: 'Add Customer',
+      create_new_group: 'Create New Group',
+      search_member: 'Search for Member',
       unsupport_message:
         'This message content cannot be displayed currently, please contact the system administrator.',
       close: 'Close',

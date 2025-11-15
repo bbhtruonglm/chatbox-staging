@@ -98,7 +98,7 @@ function openClientInfo() {
 }
 /**toggle hội thoại này là spam */
 function toggleSpam() {
-  // api đang chạy thì không cho gọi
+  /** api đang chạy thì không cho gọi */
   if (is_loading_spam_conversation.value) return
 
   /**giá trị spam mới */
@@ -106,13 +106,13 @@ function toggleSpam() {
 
   flow(
     [
-      // * bật loading
+      /** * bật loading */
       (cb: CbError) => {
         is_loading_spam_conversation.value = true
 
         cb()
       },
-      // * gọi api
+      /** * gọi api */
       (cb: CbError) =>
         toggle_spam_conversation(
           {
@@ -128,7 +128,7 @@ function toggleSpam() {
             cb()
           }
         ),
-      // * di chuyển hội thoại ra khỏi danh sách nếu cần thiết
+      /** * di chuyển hội thoại ra khỏi danh sách nếu cần thiết */
       (cb: CbError) => {
         if (!conversationStore.select_conversation) return
 
@@ -137,36 +137,33 @@ function toggleSpam() {
 
         if (!KEY) return cb()
 
-        // thay đổi cờ của conversation đang chọn
+        /** thay đổi cờ của conversation đang chọn */
         conversationStore.select_conversation.is_spam_fb = NEW_IS_SPAM
 
-        // nếu trong danh sách đang tồn tại hội thoại thì xoá đi
+        /** nếu trong danh sách đang tồn tại hội thoại thì xoá đi */
         if (conversationStore.conversation_list[KEY]) {
-          // lấy vị trí trước khi bị ẩn
+          /** lấy vị trí trước khi bị ẩn */
           index_of_spam_conversation.value = Object.keys(
             conversationStore.conversation_list
           ).indexOf(KEY)
 
-          // xoá khỏi danh sách
+          /** xoá khỏi danh sách */
           delete conversationStore.conversation_list[KEY]
-        }
-        // nếu trong danh sách không tồn tại hội thoại thì hiện lên
-        else {
+        } else {
+          /** nếu trong danh sách không tồn tại hội thoại thì hiện lên */
           // đổi danh sách hội thoại thành mảng
-          let conversation_array = map(conversationStore.conversation_list)
-
-          // thêm phần tử bị xoá vào đúng vị trí cũ của mảng
-          conversation_array.splice(
-            index_of_spam_conversation.value,
-            0,
-            conversationStore.select_conversation
-          )
-
-          // biến đổi mảng thành obj
-          conversationStore.conversation_list = keyBy(
-            conversation_array,
-            'data_key'
-          )
+          // let conversation_array = map(conversationStore.conversation_list)
+          // // thêm phần tử bị xoá vào đúng vị trí cũ của mảng
+          // conversation_array.splice(
+          //   index_of_spam_conversation.value,
+          //   0,
+          //   conversationStore.select_conversation
+          // )
+          // // biến đổi mảng thành obj
+          // conversationStore.conversation_list = keyBy(
+          //   conversation_array,
+          //   'data_key'
+          // )
         }
 
         cb()

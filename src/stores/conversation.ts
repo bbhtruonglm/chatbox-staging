@@ -1,20 +1,20 @@
-import { getLocal, saveLocal } from '@/service/helper/store'
-import { useExtensionStore } from '@/stores'
-import { useOrgStore } from '@/stores/dashboard'
-import { usePageStore } from '@/stores/page'
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { useRoute } from 'vue-router'
-
 import type {
   ConversationInfo,
   ConversationList,
   FilterConversation,
 } from '@/service/interface/app/conversation'
-import type { ILabel } from '@/service/interface/app/label'
 import type { IPost, IPostAnalytic } from '@/service/interface/app/message'
+import { getLocal, saveLocal } from '@/service/helper/store'
+
 import type { AppInstalledInfo } from '@/service/interface/app/widget'
 import type { ClientInfo } from '@/utils/api/Chatbot'
+import type { ILabel } from '@/service/interface/app/label'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { useExtensionStore } from '@/stores'
+import { useOrgStore } from '@/stores/dashboard'
+import { usePageStore } from '@/stores/page'
+import { useRoute } from 'vue-router'
 
 export const useConversationStore = defineStore('conversation_store', () => {
   /** router */
@@ -36,6 +36,13 @@ export const useConversationStore = defineStore('conversation_store', () => {
   const select_conversation_post = ref<IPost>()
   /**thống kê bài viết đang được chọn */
   const select_conversation_post_analytic = ref<IPostAnalytic>()
+
+  /** id của page vừa phản hồi */
+  const selected_client_id = ref<string>()
+  /** Trạng thái clear conversation */
+  const is_clearing_conversation = ref<boolean>(false)
+  /** Trạng thái thay đổi select conversation */
+  const is_switching_conversation = ref<boolean>(false)
 
   /** lấy dữ liệu lọc hội thoại */
   function getOptionFilterPageData(): FilterConversation {
@@ -204,5 +211,8 @@ export const useConversationStore = defineStore('conversation_store', () => {
     getPage,
     getPageById,
     isFindClientInfo,
+    selected_client_id,
+    is_clearing_conversation,
+    is_switching_conversation,
   }
 })

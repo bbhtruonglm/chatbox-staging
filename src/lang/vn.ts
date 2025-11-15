@@ -129,6 +129,14 @@ const source: Language = {
       select_all: 'Chọn tất cả',
       active: 'Kích hoạt',
       chatbox: 'Chatbox',
+      add_customer: 'Thêm khách hàng',
+      create_new_group: 'Tạo nhóm mới',
+      search_member: 'Tìm kiếm thành viên',
+      create_group: 'Tạo nhóm',
+      your_group_name: 'Tên nhóm của bạn',
+      create_zalo_group: 'Tạo nhóm Zalo',
+      member_selected: 'Đã chọn',
+
       unsupport_message:
         'Nội dung tin nhắn này hiện tại chưa thể hiển thị được, vui lòng liên hệ với quản trị viên hệ thống',
       close: 'Đóng',
@@ -882,6 +890,10 @@ const source: Language = {
               edit_name: 'Đổi tên',
               folder_new_name: 'Thư mục mới',
               select_album_from_other_page: 'Chọn album từ trang khác',
+              album_desc:
+                'Mỗi thư mục chỉ hiển thị tối đa 80 ảnh, dù thực tế có thể có nhiều hơn.',
+              album_desc_2: 'Sử dụng Tìm kiếm để tìm các ảnh thứ 81 trở đi',
+              search: 'Tìm kiếm',
             },
           },
           user: {

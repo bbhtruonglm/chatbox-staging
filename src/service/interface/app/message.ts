@@ -20,7 +20,7 @@ export interface IPostAnalyticData {
   /**tổng số lượt reaction sorry */
   total_reaction_sorry?: number
   /**tổng số lượt reaction anger */
-  total_reaction_anger?: number,
+  total_reaction_anger?: number
 
   // phân loại cảm xúc
   /**tổng số lượt cảm xúc tích cực */
@@ -345,6 +345,31 @@ export interface SendMesageInput {
   client_id: string
   /**nội dung tin nhắn dạng văn bản */
   text?: string
+  attachment?: {
+    /**link của file muốn gửi */
+    url: string
+    /**file muốn gửi là loại gì */
+    type: FileTypeInfo
+  }
+  /**gửi tin nhắn vào nhóm */
+  is_group?: boolean
+  /** tin nhắn dạng ghi chú */
+  is_note?: boolean
+}
+/**body khi gửi tin nhắn */
+export interface SendMesageInputHorizontal {
+  /**id trang */
+  page_id: string
+  /**id khách hàng */
+  client_id: string
+  /**nội dung tin nhắn dạng văn bản */
+  text?: string
+  attachments?: {
+    /**link của file muốn gửi */
+    url: string
+    /**file muốn gửi là loại gì */
+    type: FileTypeInfo
+  }[]
   attachment?: {
     /**link của file muốn gửi */
     url: string

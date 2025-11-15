@@ -1,9 +1,17 @@
 import { Botx } from '@/utils/api/Botx'
+import { injectable } from 'tsyringe'
 
-/**gọi API lên server n13 zalo cá nhân */
+@injectable()
 export class N13ZaloPersonal extends Botx {
   constructor(path: string) {
-    // gọi API lên server của chatbox
     super(`${$env.host.n13_zalo_personal}/${path}`)
+  }
+
+  public async createGroupZalo(payload: {
+    page_id: string
+    group_name: string
+    member_ids: string[]
+  }): Promise<string> {
+    return this.post('create_group', payload)
   }
 }

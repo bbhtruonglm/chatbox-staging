@@ -32,34 +32,10 @@
             </div>
           </div>
           <div class="overflow-y-auto flex-grow min-h-0">
-            <!-- <div class="section border-b">
-              <div class="title">
-                {{ $t('v1.view.main.dashboard.org.pay.account') }}
-              </div>
-              <div class="flex items-center gap-3">
-                <StaffAvatar
-                  :id="chatbotUserStore.chatbot_user?.user_id"
-                  class="rounded-oval w-11 h-11"
-                />
-                <div>
-                  <div class="text-sm font-semibold">
-                    {{ chatbotUserStore.chatbot_user?.full_name }}
-                  </div>
-                  <div class="text-sm font-medium text-slate-500">
-                    {{
-                      chatbotUserStore.chatbot_user?.email ||
-                      chatbotUserStore.chatbot_user?.user_id ||
-                      chatbotUserStore.chatbot_user?.fb_staff_id
-                    }}
-                  </div>
-                </div>
-              </div>
-            </div> -->
             <div class="section border-b">
               <div class="title">
                 {{ $t('v1.view.main.dashboard.org.pay.account') }}
               </div>
-
               <div class="flex items-center gap-3">
                 <StaffAvatar
                   :id="chatbotUserStore.chatbot_user?.user_id"
@@ -78,54 +54,7 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Field mới: Mã liên kết hệ thống khác -->
-              <div class="mt-3">
-                <div class="flex items-center gap-2">
-                  <div class="text-sm font-medium text-slate-600">
-                    Mã liên kết hệ thống khác:
-                  </div>
-
-                  <!-- Nếu đang chỉnh sửa -->
-                  <template v-if="is_editing_integration_id">
-                    <input
-                      v-model="integration_ref"
-                      class="border border-slate-300 rounded px-2 py-1 text-sm focus:ring focus:ring-blue-200"
-                      placeholder="Nhập mã liên kết..."
-                    />
-                    <button
-                      @click="saveIntegrationRef"
-                      class="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      Lưu
-                    </button>
-                    <button
-                      @click="cancelEdit"
-                      class="px-2 py-1 text-sm border border-slate-300 rounded hover:bg-slate-50"
-                    >
-                      Hủy
-                    </button>
-                  </template>
-
-                  <!-- Nếu đang hiển thị -->
-                  <template v-else>
-                    <div class="text-sm text-slate-800">
-                      {{
-                        chatbotUserStore.chatbot_user?.user_info?.custom_id ||
-                        '—'
-                      }}
-                    </div>
-                    <button
-                      @click="startEdit"
-                      class="text-xs text-blue-600 hover:underline"
-                    >
-                      Chỉnh sửa
-                    </button>
-                  </template>
-                </div>
-              </div>
             </div>
-
             <div class="section">
               <div class="title">
                 {{ $t('v1.view.main.dashboard.user.general') }}
@@ -237,78 +166,41 @@
   </Teleport>
 </template>
 <script setup lang="ts">
-import { useChatbotUserStore } from '@/stores'
 import { ref } from 'vue'
+import { useChatbotUserStore } from '@/stores'
 import { useI18n } from 'vue-i18n'
 
 import StaffAvatar from '@/components/Avatar/StaffAvatar.vue'
-import Toggle from '@/components/Toggle.vue'
 import Item from '@/components/User/UserInfo/Item.vue'
+import Toggle from '@/components/Toggle.vue'
 import Lang from '@/components/User/UserInfo/Lang.vue'
+import Theme from '@/components/User/UserInfo/Theme.vue'
+import Translate from '@/components/User/UserInfo/Translate.vue'
 
-import BellIcon from '@/components/Icons/Bell.vue'
 import CloseIcon from '@/components/Icons/Close.vue'
-import CogBoldIcon from '@/components/Icons/CogBold.vue'
+import BellIcon from '@/components/Icons/Bell.vue'
 import GlobalBoldIcon from '@/components/Icons/GlobalBold.vue'
-import TagIcon from '@/components/Icons/Tag.vue'
+import MoonIcon from '@/components/Icons/Moon.vue'
+import TranslateIcon from '@/components/Icons/Translate.vue'
+import UserIcon from '@/components/Icons/User.vue'
+import CogBoldIcon from '@/components/Icons/CogBold.vue'
 import UserCircleIcon from '@/components/Icons/UserCircle.vue'
-import { update_chatbot_user_info } from '@/service/api/chatbox/n4-service'
-/** hàm dịch */
+import TagIcon from '@/components/Icons/Tag.vue'
+
 const { t: $t } = useI18n()
-/** Hàm emit close modal */
+
 const $emit = defineEmits(['close_modal'])
-/** user trong store */
+
 const chatbotUserStore = useChatbotUserStore()
 
 /**các lựa chọn chế độ hiển thị nhãn */
 const SELECT_LABEL_TYPE = {
-  /** hiển thị văn bản */
+  // hiển thị văn bản
   FULL: $t('v1.view.main.dashboard.user.text'),
-  /** hiển thị chấm màu */
+  // hiển thị chấm màu
   ICON: $t('v1.view.main.dashboard.user.dot'),
-  /** hiển thị icon và chú thích */
+  // hiển thị icon và chú thích
   ICON_TOOLTIP: $t('v1.view.main.dashboard.user.dot_tooltip'),
-}
-/** trạng thái editing */
-const is_editing_integration_id = ref(false)
-/** giá trị custom id */
-const integration_ref = ref<string>(
-  chatbotUserStore.chatbot_user?.user_info?.custom_id || ''
-)
-
-/** Bắt đầu chỉnh sửa */
-function startEdit() {
-  /** Lấy thông tin trong store */
-  integration_ref.value =
-    chatbotUserStore.chatbot_user?.user_info?.custom_id || ''
-  /** bật cờ edit */
-  is_editing_integration_id.value = true
-}
-
-/** Hủy chỉnh sửa */
-function cancelEdit() {
-  is_editing_integration_id.value = false
-}
-
-/** Lưu giá trị */
-async function saveIntegrationRef() {
-  try {
-    /** call api cập nhật */
-    await update_chatbot_user_info({ custom_id: integration_ref.value })
-    /** Thông tin user */
-    const USER = chatbotUserStore.chatbot_user
-    /** Nếu không có thì return */
-    if (!USER) return
-    /** nếu không có thì gán bằng {} */
-    if (!USER.user_info) USER.user_info = {}
-    /** Lưu thông tin trong store */
-    USER.user_info.custom_id = integration_ref.value
-    /** Tắt cờ trigger */
-    is_editing_integration_id.value = false
-  } catch (err) {
-    console.error('Lỗi khi lưu mã liên kết:', err)
-    alert('Không thể lưu, vui lòng thử lại!')
-  }
 }
 
 /**ẩn hiện modal */
@@ -316,14 +208,14 @@ const is_open = ref(false)
 
 /**ẩn hiện modal */
 function toggleModal() {
-  /** toggle modal */
+  // toggle modal
   is_open.value = !is_open.value
 
-  /** bắn sự kiện ra ngoài khi modal đã tắt */
+  // bắn sự kiện ra ngoài khi modal đã tắt
   if (!is_open.value) $emit('close_modal')
 }
 
-/** public chức năng ẩn hiện modal để có thể được gọi từ bên ngoài component */
+// public chức năng ẩn hiện modal để có thể được gọi từ bên ngoài component
 defineExpose({ toggleModal })
 </script>
 <style lang="scss" scoped>
