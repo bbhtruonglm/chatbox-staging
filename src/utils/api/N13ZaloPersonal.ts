@@ -15,6 +15,24 @@ interface ICreateGroupZalo {
   /** Id của nhân viên */
   member_ids: string[]
 }
+/** Khai báo group kiểu dữ liệu payload */
+interface IUpdateGroupZalo {
+  /** Page id */
+  page_id: string
+  /** Tên group */
+  group_id: string
+  /** Id của nhân viên */
+  member_id: string[]
+}
+/** Khai báo group kiểu dữ liệu payload */
+interface IRemoveMemberZalo {
+  /** Page id */
+  page_id: string
+  /** Tên group */
+  group_id: string
+  /** Id của nhân viên */
+  member_id: string
+}
 
 /**
  * @class N13ZaloPersonal
@@ -43,5 +61,29 @@ export class N13ZaloPersonal extends Botx {
   public async createGroupZalo(payload: ICreateGroupZalo): Promise<string> {
     /** Gọi phương thức POST của Botx với endpoint 'create_group' và payload */
     return this.post('create_group', payload)
+  }
+  /**
+   * Tạo nhóm Zalo mới
+   * @param {Object} payload - Dữ liệu gửi lên API
+   * @param {string} payload.page_id - ID của page Zalo thực hiện tạo nhóm
+   * @param {string} payload.group_name - Tên nhóm Zalo muốn tạo
+   * @param {string[]} payload.member_ids - Danh sách ID thành viên cần thêm vào nhóm
+   * @returns {Promise<string>} Trả về message hoặc group ID từ server
+   */
+  public async addMemberZalo(payload: IUpdateGroupZalo): Promise<string> {
+    /** Gọi phương thức POST của Botx với endpoint 'create_group' và payload */
+    return this.post('add_member_group', payload)
+  }
+  /**
+   * Tạo nhóm Zalo mới
+   * @param {Object} payload - Dữ liệu gửi lên API
+   * @param {string} payload.page_id - ID của page Zalo thực hiện tạo nhóm
+   * @param {string} payload.group_name - Tên nhóm Zalo muốn tạo
+   * @param {string[]} payload.member_ids - Danh sách ID thành viên cần thêm vào nhóm
+   * @returns {Promise<string>} Trả về message hoặc group ID từ server
+   */
+  public async removeMemberZalo(payload: IRemoveMemberZalo): Promise<string> {
+    /** Gọi phương thức POST của Botx với endpoint 'create_group' và payload */
+    return this.post('remove_member_group', payload)
   }
 }

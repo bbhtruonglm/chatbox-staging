@@ -30,7 +30,6 @@ import MessageList from '@/views/ChatWarper/Chat/CenterContent/MessageList.vue'
 import ZaloPersonalModal from '@/views/ChatWarper/Chat/CenterContent/MessageList/MessageItem/PhoneAction/ZaloPersonalModal.vue'
 import StaffReadModal from '@/views/ChatWarper/Chat/CenterContent/StaffReadModal.vue'
 import UserInfo from '@/views/ChatWarper/Chat/CenterContent/UserInfo.vue'
-import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ZaloCreateGroup from './CenterContent/MessageList/MessageItem/PhoneAction/ZaloCreateGroup.vue'
 

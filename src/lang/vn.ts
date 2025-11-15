@@ -21,6 +21,8 @@ const source: Language = {
   'Bước _': 'Bước {name}',
   "Gửi tin nhắn đến _. Sử dụng '/' để trả lời nhanh.":
     "Gửi tin nhắn đến {name}. Sử dụng '/' để trả lời nhanh.",
+
+  'add _ member': 'Thêm {count} thành viên',
   'Bình luận dưới tên _': 'Bình luận dưới tên {name}',
   'Bình luận với vai trò _': 'Bình luận với vai trò {name}',
   'Đối với tài khoản _': 'Đối với tài khoản {name}',
@@ -137,6 +139,9 @@ const source: Language = {
       create_zalo_group: 'Tạo nhóm Zalo',
       member_selected: 'Đã chọn',
       no_data: 'Không có thành viên',
+      list_member: 'Danh sách thành viên',
+      add_member: 'Thêm thành viên',
+      reset_select: 'Thiết lập lại',
 
       unsupport_message:
         'Nội dung tin nhắn này hiện tại chưa thể hiển thị được, vui lòng liên hệ với quản trị viên hệ thống',

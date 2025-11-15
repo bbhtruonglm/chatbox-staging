@@ -62,7 +62,6 @@
             () => {
               modal_zalo_create_group_ref?.toggleModal()
               message_data = undefined
-              console.log('hhahahahah')
             }
           "
           v-tooltip="$t('v1.common.create_new_group')"
@@ -75,7 +74,6 @@
             () => {
               modal_zalo_personal_ref?.toggleModal()
               message_data = undefined
-              console.log('nnnnnn')
             }
           "
           v-tooltip="$t('v1.common.add_customer')"

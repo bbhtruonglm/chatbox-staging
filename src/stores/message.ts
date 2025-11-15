@@ -7,6 +7,7 @@ import type {
 } from '@/service/interface/app/message'
 
 import type { UploadFile } from '@/service/interface/app/album'
+import type ZaloAddMember from '@/views/ChatWarper/Chat/CenterContent/MessageList/MessageItem/PhoneAction/ZaloAddMember.vue'
 import type ZaloCreateGroup from '@/views/ChatWarper/Chat/CenterContent/MessageList/MessageItem/PhoneAction/ZaloCreateGroup.vue'
 import type ZaloPersonalModal from '@/views/ChatWarper/Chat/CenterContent/MessageList/MessageItem/PhoneAction/ZaloPersonalModal.vue'
 import { defineStore } from 'pinia'
@@ -54,6 +55,8 @@ export const useMessageStore = defineStore('message_store', () => {
   /** Địa chỉ trỏ tới modal Tạo nhóm zalo */
   const modal_zalo_create_group_ref =
     ref<InstanceType<typeof ZaloCreateGroup>>()
+  /** Địa chỉ trỏ tới modal thêm thành viên vào nhóm zalo */
+  const modal_zalo_add_member_ref = ref<InstanceType<typeof ZaloAddMember>>()
 
   /** cờ check input có thể gửi tin nhắn hay không */
   const is_can_send_message = ref(true)
@@ -108,5 +111,6 @@ export const useMessageStore = defineStore('message_store', () => {
     removeTempMessage,
     clearReplyComment,
     isAiMessage,
+    modal_zalo_add_member_ref,
   }
 })

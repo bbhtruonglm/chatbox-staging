@@ -1,35 +1,42 @@
 <template>
   <Modal
-    ref="modal_widget__group_ref"
+    ref="modal_widget_add_group_ref"
     class_modal="w-[432px]"
     :class_body="`flex flex-col gap-2 ${
       view === 'SEARCH' || !view ? 'h-[90dvh]' : 'h-[80dvh]'
     }`"
   >
     <template #header>
-      {{ $t('v1.common.create_zalo_group') }}
+      {{ $t('v1.common.add_member') }}
     </template>
 
     <template #body>
       <div class="bg-white h-full w-full rounded-md p-2 flex flex-col gap-4">
-        <!-- Tạo group -->
-        <label>{{ $t('v1.common.create_new_group') }}</label>
-        <div class="flex gap-2 items-center w-full">
-          <input
-            v-model="group_name"
-            :class="[
-              'border h-8 w-full rounded px-2 py-0.5 text-sm',
-              error_group_name ? 'border-red-500' : '',
-            ]"
-            :placeholder="$t('v1.common.your_group_name')"
-          />
+        <div class="flex w-full gap-2">
           <button
-            class="flex-shrink-0 bg-blue-700 text-white px-2 py-1 rounded-md text-sm"
-            @click="handleCreateGroup"
+            class="flex-1 bg-slate-200 font-semibold px-2 py-1 rounded-md text-sm"
+            @click="handleRemoveSelect"
           >
-            {{ $t('v1.common.create_group') }}
+            {{ $t('v1.common.reset_select') }}
+          </button>
+
+          <button
+            v-if="!isEmpty(selected_members)"
+            class="flex-1 bg-blue-700 font-semibold text-white px-2 py-1 rounded-md text-sm"
+            @click="handleAddMember"
+          >
+            {{ $t('add _ member', { count: selected_members.length }) }}
+          </button>
+
+          <button
+            v-else
+            class="flex-1 cursor-not-allowed font-semibold bg-slate-600 text-white px-2 py-1 rounded-md text-sm"
+            disabled
+          >
+            {{ $t('v1.common.add_member') }}
           </button>
         </div>
+
         <p
           v-if="error_select_members"
           class="text-red-500 text-xs mt-1"
@@ -119,23 +126,28 @@ import type {
   FilterConversation,
   QueryConversationResponse,
 } from '@/service/interface/app/conversation'
-import { useOrgStore, usePageStore } from '@/stores'
+import { useConversationStore, useOrgStore, usePageStore } from '@/stores'
 import { N13ZaloPersonal } from '@/utils/api/N13ZaloPersonal'
 import { N4SerivceAppConversation } from '@/utils/api/N4Service/Conversation'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { keys } from 'lodash'
+import { isEmpty, keys } from 'lodash'
 
 /** Stores quản lý org và page */
 const orgStore = useOrgStore()
 const pageStore = usePageStore()
-
+/** THông tin conversation */
+const conversationStore = useConversationStore()
+/**id khách */
+const client_id = computed(
+  () => conversationStore.select_conversation?.fb_client_id
+)
 /** UI state */
 /** Tên group Zalo muốn tạo */
 const group_name = ref('')
 /** Từ khóa tìm kiếm conversation */
 const search_conversation = ref<string>()
 /** Ref tới component modal */
-const modal_widget__group_ref = ref<InstanceType<typeof Modal>>()
+const modal_widget_add_group_ref = ref<InstanceType<typeof Modal>>()
 /** View hiện tại: SEARCH, CHAT, FRIEND_REQUEST hoặc trống */
 const view = ref<'SEARCH' | 'CHAT' | 'FRIEND_REQUEST' | ''>('')
 /** Cờ kiểm tra modal đang mở */
@@ -178,7 +190,7 @@ class Main {
    * Bật/tắt modal, nếu mở modal sẽ fetch toàn bộ conversation
    */
   toggleModal() {
-    modal_widget__group_ref.value?.toggleModal()
+    modal_widget_add_group_ref.value?.toggleModal()
     is_modal_open.value = !is_modal_open.value
     if (is_modal_open.value) {
       fetchAllConversations()
@@ -306,46 +318,40 @@ const FILTERED_CONVERSATION = computed(() => {
       (conv.client_phone || '').includes(KEYWORD)
   )
 })
+/** Hàm reset các select */
+async function handleRemoveSelect() {
+  selected_members.value = []
+}
 
 /**
- * Xử lý tạo group trên Zalo
+ * Xử lý Thêm thành viên vào nhóm trên Zalo
  */
-async function handleCreateGroup() {
-  /** Reset lỗi */
-  error_group_name.value = false
+async function handleAddMember() {
   error_select_members.value = ''
-
-  /** Kiểm tra tên group */
-  if (!group_name.value.trim()) {
-    error_group_name.value = true
-    return
-  }
-  /** Kiểm tra số lượng thành viên */
-  if (selected_members.value.length < 2) {
-    error_select_members.value = 'Vui lòng chọn ít nhất 2 thành viên'
-    return
-  }
 
   /** Lấy page_id mặc định (page đầu tiên) */
   const PAGE_IDS = keys(pageStore.selected_page_id_list)
-  const page_id = PAGE_IDS[0] || ''
+
+  /** Lấy page_id mặc định (page đầu tiên) */
+  let page_id = PAGE_IDS[0] || ''
+
+  const GROUP_ID = keys(conversationStore.selected_client_id)
+  let group_id = GROUP_ID[0] || client_id.value || ''
 
   /** Payload gửi lên API Zalo */
   const PAYLOAD = {
-    group_name: group_name.value.trim(),
-    member_ids: selected_members.value.map(m => m.fb_client_id),
+    member_id: selected_members.value.map(m => m.fb_client_id),
     page_id,
+    group_id,
   }
 
   try {
     /** Gọi API tạo group */
-    const DATA = await API_ZALO.createGroupZalo(PAYLOAD)
+    const DATA = await API_ZALO.addMemberZalo(PAYLOAD)
     console.log('Tạo group thành công:', DATA)
 
-    /** Reset UI sau khi tạo thành công */
-    group_name.value = ''
     selected_members.value = []
-    modal_widget__group_ref.value?.toggleModal()
+    modal_widget_add_group_ref.value?.toggleModal()
   } catch (err) {
     console.error('Lỗi khi tạo group:', err)
   }
