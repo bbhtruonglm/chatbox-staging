@@ -58,41 +58,25 @@ class Main {
     ),
     private readonly API_PAGE = container.resolve(N4SerivceAppPage)
   ) {}
-  // /**cấp quyền bằng cách redirect của tiktok */
-  // async oAuthByRedirect() {
-  //   // nếu đã đạt tới giới hạn trang thì báo lỗi
-  //   if (orgStore.isReachPageQuota())
-  //     return alert_reach_quota_page_ref.value?.toggleModal()
-
-  //   /**app_id của Tiktok */
-  //   const APP_ID = $env.tiktok.app_id
-  //   /**redirect_uri của Tiktok */
-  //   const REDIRECT_URI = $env.tiktok.redirect_uri
-
-  //   // const REDIRECT_URI = 'https://localhost:8001/callback_tiktok'
-  //   /**scope của Tiktok */
-  //   const SCOPE = encodeURIComponent($env.tiktok.scope.join(','))
-
-  //   // redirect sang trang cấp quyền của IG
-  //   this.SERVICE_WINDOW_ACTION.redirect(
-  //     `https://www.tiktok.com/v2/auth/authorize?client_key=${APP_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`
-  //   )
-  // }
+  /** Lấy URL OAuth TikTok từ backend
+   * @param redirectUri URI chuyển hướng sau khi cấp quyền
+   * @return URL OAuth hoặc undefined nếu có lỗi
+   */
   async getTikTokOAuthUrl(redirectUri: string): Promise<string | undefined> {
     try {
-      // Gọi API backend
+      /** Gọi API backend */
       const RES = (await this.API_PAGE.getTiktokUri(redirectUri)) as
         | TikTokOAuthResponse
         | null
         | undefined
 
-      // Nếu backend không trả redirect_url
+      /** Nếu backend không trả redirect_url */
       if (!RES?.redirect_url) {
         console.error('Invalid response from getTiktokUri:', RES)
         return undefined
       }
 
-      // Trả về URL
+      /** Trả về URL */
       return RES.redirect_url
     } catch (err) {
       console.error('Error fetching TikTok OAuth URL:', err)
@@ -102,20 +86,20 @@ class Main {
 
   /** cấp quyền bằng redirect của TikTok */
   async oAuthByRedirect() {
-    // Nếu vượt quota thì báo lỗi
+    /** Nếu vượt quota thì báo lỗi */
     if (orgStore.isReachPageQuota())
       return alert_reach_quota_page_ref.value?.toggleModal()
 
     try {
-      // Gọi API backend lấy URL OAuth (đầy đủ state + PKCE + scope...)
+      /** Gọi API backend lấy URL OAuth (đầy đủ state + PKCE + scope...) */
       const RES = await this.getTikTokOAuthUrl($env.tiktok.redirect_uri)
-      console.log(RES, 'RES')
+      /** Nếu không lấy được URL */
       if (!RES) {
         console.error('Missing RES!')
         return
       }
 
-      // Redirect sang trang cấp quyền TikTok
+      /** Redirect sang trang cấp quyền TikTok */
       this.SERVICE_WINDOW_ACTION.redirect(RES)
     } catch (err) {
       console.error('Failed to load TikTok OAuth URL:', err)

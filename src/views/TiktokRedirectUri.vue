@@ -16,14 +16,14 @@ import { useRoute, useRouter } from 'vue-router'
 
 import Loading from '@/components/Loading.vue'
 import DeauthorizeTiktok from './DeauthorizeTiktok.vue'
-
+/** Khai báo các biến  */
 const $route = useRoute()
 const $router = useRouter()
 const orgStore = useOrgStore()
 
-// Lấy param từ URL
+/** Lấy param từ URL */
 const code = ref($route.query.code as string)
-const stateFromUrl = ref($route.query.state as string)
+const state_from_url = ref($route.query.state as string)
 const error_reason = ref($route.query.error_reason as string)
 
 class Main {
@@ -33,36 +33,36 @@ class Main {
 
   @error()
   async handleCode() {
-    // Nếu có lỗi từ OAuth thì dừng
+    /** Nếu có lỗi từ OAuth thì dừng */
     if (error_reason.value) return
 
-    // Nếu không có code hoặc state, dừng
-    if (!code.value || !stateFromUrl.value) {
+    /** Nếu không có code hoặc state, dừng */
+    if (!code.value || !state_from_url.value) {
       console.error('Missing code or state in URL!')
       return
     }
 
-    // ID tổ chức đang chọn
+    /** ID tổ chức đang chọn */
     const ORG_ID = orgStore.selected_org_id
 
-    // Gọi API sync TikTok page
+    /** Gọi API sync TikTok page */
     await this.API_PAGE.syncTiktokPage(
       code.value,
       $env.tiktok.redirect_uri,
       ORG_ID,
-      stateFromUrl.value
+      state_from_url.value
     )
 
-    // Nếu chưa có org, mở trang connect page
+    /** Nếu chưa có org, mở trang connect page */
     const QUERY = ORG_ID ? undefined : { connect_page: 'PAGE' }
 
-    // Chuyển hướng
+    /** Chuyển hướng */
     $router.push({ path: '/dashboard/select-page', query: QUERY })
   }
 }
 
 const $main = new Main()
 
-// Xử lý khi component mount
+/** Xử lý khi component mount */
 onMounted(() => $main.handleCode())
 </script>

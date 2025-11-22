@@ -296,6 +296,10 @@ const source: Language = {
   'Giới tính': 'Gender',
   'Không xác định': 'Unknown',
   name: 'English',
+
+  'Kết nối với Tiktok': 'Connect with TikTok',
+  'Kết nối với Tiktok để chat nhiều Trang tự động với AI, tối ưu chi phí Marketing với CAPI, tự động tích hợp các ứng dụng của Doanh nghiệp.':
+    'Connect with TikTok to chat automatically across multiple Pages with AI, optimize marketing costs with CAPI, and automatically integrate your business applications.',
   v1: {
     common: {
       zalo: 'Zalo',
@@ -355,6 +359,7 @@ const source: Language = {
       copy: 'Copy',
       continue: 'Continue',
       warning: 'Warning',
+      tiktok: 'Tiktok',
     },
     view: {
       network: {

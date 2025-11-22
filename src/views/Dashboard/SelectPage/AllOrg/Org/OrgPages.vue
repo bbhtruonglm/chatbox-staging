@@ -92,7 +92,7 @@ const grouped_page_list = computed<Record<string, PageData[]>>(() => {
     // thêm trang vào nền tảng tương ứng
     result[PAGE_TYPE] = [...(result[PAGE_TYPE] || []), page]
   })
-
+  console.log(result, 'result')
   return result
 })
 
