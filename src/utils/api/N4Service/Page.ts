@@ -1,12 +1,12 @@
-import { N4Serivce } from '@/utils/api/N4Serivce'
-
 import type {
   IPage,
   PageList,
   PageWebsiteCreate,
 } from '@/service/interface/app/page'
+
 import type { AllStaffList } from '@/service/interface/app/staff'
 import type { LocationQueryValue } from 'vue-router'
+import { N4Serivce } from '@/utils/api/N4Serivce'
 import { singleton } from 'tsyringe'
 
 /**dữ liệu của trang hiện tại kích hoạt */
@@ -33,7 +33,7 @@ export class N4SerivceAppPage extends N4Serivce {
     return this.post('get_current_page', body)
   }
   /**
-   * đọc danh sách trang đang kích hoạt của tổ chức 
+   * đọc danh sách trang đang kích hoạt của tổ chức
    * @param org_id id tổ chức
    * @param group_id lọc theo id nhóm
    */
@@ -127,6 +127,28 @@ export class N4SerivceAppPage extends N4Serivce {
   ): Promise<void> {
     // gọi api
     return this.post('sync_instagram_page', { code, redirect_uri, org_id })
+  }
+  /**kết nối, tái đồng bộ tài khoản IG */
+  public async syncTiktokPage(
+    code: string,
+    redirect_uri: string,
+    org_id?: string,
+    state?: string
+  ): Promise<void> {
+    // gọi api
+    return this.post('tiktok/sync_tiktok_page', {
+      code,
+      redirect_uri,
+      org_id,
+      state,
+    })
+  }
+  /**k Lấy link kết nối với tiktok */
+  public async getTiktokUri(redirect_uri: string): Promise<void> {
+    // gọi api
+    return this.post('tiktok/get_tiktok_auth_url', {
+      redirect_uri,
+    })
   }
   /**kết nối tài khoản zalo cá nhân */
   public async syncZaloPersonalPage(org_id?: string): Promise<string> {
