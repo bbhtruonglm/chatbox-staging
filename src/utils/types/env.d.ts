@@ -82,7 +82,8 @@ declare global {
       app_id: string
       /**các quyền của IG */
       scope: string[]
-      /** Đường link lấy full URL từ tiktok */
+
+      /** get link api */
       get_link_api: string
     }
     /**danh sách các nền tảng được kết nối với hệ thống chatobox */

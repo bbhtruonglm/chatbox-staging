@@ -856,6 +856,7 @@ const source: Language = {
             action: {
               open_url: 'Go to link',
               open_facebook: 'Facebook profile',
+              open_tiktok: 'Tiktok profile',
               open_inbox: 'Open Facebook inbox',
               mark_unread: 'Mark message as unread',
               block_user: 'Block user',

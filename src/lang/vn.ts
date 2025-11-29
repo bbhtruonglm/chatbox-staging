@@ -650,6 +650,7 @@ const source: Language = {
             action: {
               open_url: 'Đi đến liên kết',
               open_facebook: 'Trang cá nhân Facebook',
+              open_tiktok: 'Trang cá nhân Tiktok',
               open_inbox: 'Mở hộp thư Facebook',
               mark_unread: 'Đánh dấu tin nhắn là chưa đọc',
               block_user: 'Chặn người dùng',

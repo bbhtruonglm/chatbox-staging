@@ -70,6 +70,8 @@ export interface FolderInfo {
   title: string
   /**gắn cờ chế độ chỉnh sửa */
   is_edit?: boolean
+  /** id page */
+  fb_page_id?: string
 }
 /**cập nhật dữ liệu thư mục */
 export interface UpdateFolderInput {
