@@ -4,6 +4,8 @@ import { singleton } from 'tsyringe'
 
 /**Thông tin của một thành viên trong nhóm*/
 export interface IGroupMember {
+  /**id của thành viên*/
+  client_id?: string
   /**Tên của thành viên*/
   client_name?: string
   /**avatar của thành viên*/

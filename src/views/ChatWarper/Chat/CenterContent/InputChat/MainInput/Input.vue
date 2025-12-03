@@ -73,7 +73,10 @@ import FacebookError from '@/components/Main/Dashboard/FacebookError.vue'
 
 import type { Cb, CbError } from '@/service/interface/function'
 import type { UploadFile } from '@/service/interface/app/album'
-import { N4SerivceAppConversation } from '@/utils/api/N4Service/Conversation'
+import {
+  N4SerivceAppConversation,
+  N4SerivceAppMessage,
+} from '@/utils/api/N4Service/Conversation'
 
 const { ToastReplyComment } = composableService()
 const { InputService } = inputComposableService()
@@ -99,6 +102,16 @@ const facebook_error_ref = ref<InstanceType<typeof FacebookError>>()
 const facebook_error = ref<{
   code?: number
   message?: string
+}>()
+
+import { getPageStaff } from '@/service/function'
+import { values } from 'lodash'
+import type Mention from '@/views/ChatWarper/Chat/CenterContent/InputChat/MainInput/Mention.vue'
+
+/**props */
+const $props = defineProps<{
+  /**ref của Mention component */
+  mention_ref?: InstanceType<typeof Mention>
 }>()
 
 /**id trang */
@@ -146,6 +159,7 @@ class Main {
    */
   constructor(
     private readonly API_POST = container.resolve(N4SerivceAppPost),
+    private readonly API_MESSAGE = container.resolve(N4SerivceAppMessage),
     private readonly SERVICE_INPUT = container.resolve(InputService),
     private readonly API_CONVERSATION = container.resolve(
       N4SerivceAppConversation
@@ -247,6 +261,8 @@ class Main {
 
     /** nếu đang mở trả lời nhanh thì không submit, mà chạy vào logic chọn câu trả lời */
     if (commonStore.is_show_quick_answer) return
+    /** nếu đang mở mention modal thì không submit */
+    if (commonStore.is_show_mention) return
     /** nếu không thì gửi tin nhắn bình thường */ else this.sendMessage()
   }
   /**gửi tin nhắn */
@@ -282,6 +298,9 @@ class Main {
           return this.privateReply(PAGE_ID, CLIENT_ID, TEXT)
       }
 
+      if (messageStore.reply_message?.type === 'REPLY_MESSAGE') {
+        return this.sendReplyMessage(PAGE_ID, CLIENT_ID, TEXT)
+      }
       /** gửi text */
       this.sendText(PAGE_ID, CLIENT_ID, TEXT, INPUT)
     }
@@ -293,6 +312,88 @@ class Main {
 
     /** xóa câu trả lời của ai */
     await this.clearAiAnswer()
+  }
+  /** tính toán mentions */
+  calcMentions(page_id: string, text: string) {
+    /** nếu không phải là nhóm thì thôi */
+    if (!conversationStore.select_conversation?.is_group) return []
+
+    const MENTIONS: { offset: number; length: number; id: string }[] = []
+
+    /** lấy mention_ref từ props */
+    const MENTION_REF = $props.mention_ref
+
+    console.log('🔍 calcMentions - mention_ref:', MENTION_REF)
+    console.log('🔍 calcMentions - text:', text)
+
+    /** nếu không có mention_ref thì thôi */
+    if (!MENTION_REF) return []
+
+    /** lấy tất cả member names đã được chọn từ map */
+    const MEMBER_NAMES: string[] = []
+    MENTION_REF.selected_members_map?.forEach(
+      (client_id: string, name: string) => {
+        MEMBER_NAMES.push(name)
+        console.log('🔍 Member in map:', name, '→', client_id)
+      }
+    )
+
+    console.log('🔍 Total members in map:', MEMBER_NAMES.length)
+
+    /** sắp xếp theo độ dài giảm dần để tránh match nhầm */
+    MEMBER_NAMES.sort((a, b) => b.length - a.length)
+
+    /** tìm từng member name trong text */
+    const OCCUPIED_RANGES: { start: number; end: number }[] = []
+
+    for (const NAME of MEMBER_NAMES) {
+      const SEARCH_PATTERN = `@${NAME}`
+      let start_index = 0
+
+      while (true) {
+        const INDEX = text.indexOf(SEARCH_PATTERN, start_index)
+        if (INDEX === -1) break
+
+        const END_INDEX = INDEX + SEARCH_PATTERN.length
+
+        /** kiểm tra trùng lặp */
+        const is_overlap = OCCUPIED_RANGES.some(
+          range => Math.max(INDEX, range.start) < Math.min(END_INDEX, range.end)
+        )
+
+        if (!is_overlap) {
+          /** lấy client_id từ mapping */
+          const CLIENT_ID = MENTION_REF.getClientIdByName(NAME)
+
+          console.log(
+            '✅ Found mention:',
+            SEARCH_PATTERN,
+            'at',
+            INDEX,
+            'id:',
+            CLIENT_ID
+          )
+
+          if (CLIENT_ID) {
+            MENTIONS.push({
+              offset: INDEX,
+              length: SEARCH_PATTERN.length,
+              id: CLIENT_ID,
+            })
+            OCCUPIED_RANGES.push({ start: INDEX, end: END_INDEX })
+          }
+        }
+
+        start_index = END_INDEX
+      }
+    }
+
+    /** sắp xếp mentions theo offset */
+    MENTIONS.sort((a, b) => a.offset - b.offset)
+
+    console.log('🎯 Final mentions:', MENTIONS)
+
+    return MENTIONS
   }
   /**luồng trả lời tin nhắn bí mật */
   @handleLoadingReplyComment
@@ -371,15 +472,16 @@ class Main {
 
     scrollToBottomMessage(messageStore.list_message_id)
   }
-  /**gửi tin nhắn dạng văn bản */
-  async sendText(
-    page_id: string,
-    client_id: string,
-    text: string,
-    input: HTMLDivElement
-  ) {
+  async sendReplyMessage(page_id: string, client_id: string, text: string) {
     /** xoá dữ liệu trong input */
     this.clearInputText()
+
+    /** xác thực dữ liệu */
+    if (!messageStore.reply_message?.message_id) return
+    /** Lấy list page */
+    const LIST = orgStore.list_os || []
+    /** lấy page trùng với page hiện tại */
+    const PAGE = LIST.find(p => p.page_id === page_id)
 
     /** scroll xuống cuối trang */
     scrollToBottomMessage(messageStore.list_message_id)
@@ -393,6 +495,74 @@ class Main {
       time: new Date().toISOString(),
       temp_id: TEMP_ID,
     })
+    /**gửi bình luận */
+    const RES = await this.API_MESSAGE.sendReplyMessage(
+      page_id,
+      client_id,
+      text,
+      messageStore.reply_message?.message_id || '',
+      PAGE?.org_id || ''
+    )
+
+    /** nếu có lỗi thì throw ra */
+    if (get(RES, 'error')) {
+      throw get(RES, 'error')
+    }
+
+    // /**bình luận được trả lời */
+    // const COMMENT =
+    //   messageStore.list_message?.[
+    //     messageStore.reply_comment?.message_index || 0
+    //   ]
+
+    // /** tiêm dữ liệu trả lời vào bình luận này */
+    // COMMENT?.reply_comments?.unshift({
+    //   comment_id: RES.id || '',
+    //   message: text,
+    //   from: { name: conversationStore.getPage()?.name },
+    //   createdAt: new Date().toISOString(),
+    // })
+
+    /** loại bỏ comment này khỏi danh sách */
+    // remove(messageStore.list_message, message => message._id === COMMENT._id)
+
+    /** thêm lại vào cuối */
+    // messageStore.list_message.push(COMMENT)
+
+    /** xoá dữ liệu trả lời */
+    messageStore.clearReplyMessage()
+
+    scrollToBottomMessage(messageStore.list_message_id)
+  }
+  /**gửi tin nhắn dạng văn bản */
+  async sendText(
+    page_id: string,
+    client_id: string,
+    text: string,
+    input: HTMLDivElement
+  ) {
+    /** tính toán mentions */
+    const MENTIONS = this.calcMentions(page_id, text)
+
+    /** xoá dữ liệu trong input */
+    this.clearInputText()
+
+    /** xóa mapping mentions */
+    $props.mention_ref?.clearMembersMap()
+
+    /** scroll xuống cuối trang */
+    scrollToBottomMessage(messageStore.list_message_id)
+
+    /**tạo id cho tin nhắn tạm */
+    const TEMP_ID = uniqueId(text)
+
+    /** thêm vào danh sách tin nhắn tạm */
+    messageStore.send_message_list.push({
+      text,
+      time: new Date().toISOString(),
+      temp_id: TEMP_ID,
+      mentions: MENTIONS,
+    })
 
     try {
       /** gửi tin nhắn bằng api chính thống */
@@ -402,6 +572,7 @@ class Main {
             page_id,
             client_id,
             text,
+            mentions: MENTIONS,
             /** is_group: conversationStore.select_conversation?.is_group, */
           },
           (e, r) => {

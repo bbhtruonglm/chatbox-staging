@@ -208,6 +208,12 @@ export interface MessageInfo {
   ai?: MessageAiData[]
   /** sender id id người gửi*/
   sender_id?: string
+  /** raw message */
+  raw?: any
+  /** đang thu hồi tin nhắn */
+  is_undo_message?: boolean
+  /** đã thu hồi tin nhắn thành công (client state) */
+  is_undone_success?: boolean
 }
 
 /**
@@ -215,7 +221,7 @@ export interface MessageInfo {
  * - REPLY: trả lời bình luận bình thường
  * - PRIVATE_REPLY: trả lời tin nhắn riêng
  */
-export type IReplyCommentType = 'REPLY' | 'PRIVATE_REPLY'
+export type IReplyCommentType = 'REPLY' | 'PRIVATE_REPLY' | 'REPLY_MESSAGE'
 
 /**dữ liệu cần thiết để trả lời bình luận */
 export interface IReplyComment {
@@ -231,6 +237,21 @@ export interface IReplyComment {
   is_loading?: boolean
   /**id bài viết */
   post_id?: string
+}
+/**dữ liệu cần thiết để trả lời bình luận */
+export interface IReplyMessage {
+  /**loại trả lời */
+  type?: IReplyCommentType
+  /**id của bình luận gốc */
+  root_message_id?: string
+  /**nội dung bình luận gốc */
+  root_message_content?: string
+  /**vị trí của tin nhắn chứa bình luận */
+  message_index?: number
+  /**có đang loading không */
+  is_loading?: boolean
+  /**id bài viết */
+  message_id?: string
 }
 
 /**dữ liệu AI của một phần tử */
@@ -357,6 +378,15 @@ export interface SendMesageInput {
   is_group?: boolean
   /** tin nhắn dạng ghi chú */
   is_note?: boolean
+  /**dữ liệu nhắc đến người dùng */
+  mentions?: {
+    /**vị trí của nhắc đến */
+    offset?: number
+    /**id của người được nhắc đến */
+    id?: string
+    /**chiều dài của nhắc đến */
+    length?: number
+  }[]
 }
 /**body khi gửi tin nhắn */
 export interface SendMesageInputHorizontal {
@@ -382,6 +412,15 @@ export interface SendMesageInputHorizontal {
   is_group?: boolean
   /** tin nhắn dạng ghi chú */
   is_note?: boolean
+  /**dữ liệu nhắc đến người dùng */
+  mentions?: {
+    /**vị trí của nhắc đến */
+    offset?: number
+    /**id của người được nhắc đến */
+    id?: string
+    /**chiều dài của nhắc đến */
+    length?: number
+  }[]
 }
 
 /**nội dung của tin nhắn tạm vừa được gửi */
@@ -396,6 +435,15 @@ export interface TempSendMessage {
   error?: boolean
   /**id tạm dưới client */
   temp_id: string
+  /**dữ liệu nhắc đến người dùng */
+  mentions?: {
+    /**vị trí của nhắc đến */
+    offset?: number
+    /**id của người được nhắc đến */
+    id?: string
+    /**chiều dài của nhắc đến */
+    length?: number
+  }[]
 }
 
 /**dữ liệu 1 file */
@@ -503,4 +551,14 @@ export interface QuickAnswerInfo {
   list_images?: string[]
   /**dánh dấu là tính năng của AI đính kèm */
   is_ai?: boolean
+}
+
+/**bối cảnh hoàn tác tin nhắn */
+export interface IContextUndoMessage {
+  /**id trang */
+  page_id: string
+  /**id khách hàng */
+  client_id: string
+  /**id tin nhắn */
+  message_mid: string
 }

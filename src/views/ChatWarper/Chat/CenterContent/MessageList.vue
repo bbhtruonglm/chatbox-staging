@@ -140,11 +140,13 @@
       </div>
       <div
         v-for="message of messageStore.send_message_list"
+        :key="message.temp_id"
         class="relative group flex flex-col gap-1 items-end py-2"
       >
         <div class="message-size group relative flex gap-1 items-end">
           <PageTempTextMessage
             :text="message.text"
+            :mentions="message.mentions"
             :class="{
               'border border-red-500': message.error,
             }"
@@ -648,6 +650,7 @@ const tryLoadUntilScrollable = (cb: CbError) => {
 </script>
 <style scoped lang="scss">
 .message-size {
-  @apply w-fit max-w-96;
+  @apply max-w-96;
+  width: fit-content;
 }
 </style>

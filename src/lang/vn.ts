@@ -21,6 +21,10 @@ const source: Language = {
   'Bước _': 'Bước {name}',
   "Gửi tin nhắn đến _. Sử dụng '/' để trả lời nhanh.":
     "Gửi tin nhắn đến {name}. Sử dụng '/' để trả lời nhanh.",
+  "Trả lời từ _. Sử dụng '/' để trả lời nhanh.":
+    "Trả lời từ {name}. Sử dụng '/' để trả lời nhanh.",
+
+  'add _ member': 'Thêm {count} thành viên',
   'Bình luận dưới tên _': 'Bình luận dưới tên {name}',
   'Bình luận với vai trò _': 'Bình luận với vai trò {name}',
   'Đối với tài khoản _': 'Đối với tài khoản {name}',
@@ -96,9 +100,6 @@ const source: Language = {
   'Giới tính': 'Giới tính',
   'Không xác định': 'Không xác định',
   name: 'Tiếng Việt',
-  'Kết nối với Tiktok': 'Kết nối với Tiktok',
-  'Kết nối với Tiktok để chat nhiều Trang tự động với AI, tối ưu chi phí Marketing với CAPI, tự động tích hợp các ứng dụng của Doanh nghiệp.':
-    'Kết nối với Tiktok để chat nhiều Trang tự động với AI, tối ưu chi phí Marketing với CAPI, tự động tích hợp các ứng dụng của Doanh nghiệp.',
   v1: {
     common: {
       zalo: 'Zalo',
@@ -132,6 +133,20 @@ const source: Language = {
       select_all: 'Chọn tất cả',
       active: 'Kích hoạt',
       chatbox: 'Chatbox',
+      add_customer: 'Thêm khách hàng',
+      create_new_group: 'Tạo nhóm mới',
+      search_member: 'Tìm kiếm thành viên',
+      create_group: 'Tạo nhóm',
+      your_group_name: 'Tên nhóm của bạn',
+      create_zalo_group: 'Tạo nhóm Zalo',
+      member_selected: 'Đã chọn',
+      no_data: 'Không có thành viên',
+      list_member: 'Danh sách thành viên',
+      add_member: 'Thêm thành viên',
+      reset_select: 'Thiết lập lại',
+      remove_member: 'Xóa thành viên',
+      confirm_remove_member: 'Xác nhận xóa thành viên khỏi nhóm?',
+
       unsupport_message:
         'Nội dung tin nhắn này hiện tại chưa thể hiển thị được, vui lòng liên hệ với quản trị viên hệ thống',
       close: 'Đóng',
@@ -158,7 +173,11 @@ const source: Language = {
       copy: 'Sao chép',
       continue: 'Tiếp tục',
       warning: 'Cảnh báo',
-      tiktok: 'Tiktok',
+      share_message: 'Chuyển tiếp tin nhắn',
+      share_to: 'Chia sẻ tin nhắn',
+      sharing_content: 'Nội dung chia sẻ',
+      enter_sharing_content: 'Nhập nội dung chia sẻ',
+      attachments: 'File đính kèm',
     },
     view: {
       network: {
@@ -554,6 +573,7 @@ const source: Language = {
           chat: {
             has_send: '{name} đã nhắn tin: {message}',
             new_message_alert: 'Có tin nhắn mới',
+            reply_message: 'Trả lời tin nhắn',
             filter: {
               title: 'Lọc tin nhắn',
               interact: {
@@ -650,7 +670,6 @@ const source: Language = {
             action: {
               open_url: 'Đi đến liên kết',
               open_facebook: 'Trang cá nhân Facebook',
-              open_tiktok: 'Trang cá nhân Tiktok',
               open_inbox: 'Mở hộp thư Facebook',
               mark_unread: 'Đánh dấu tin nhắn là chưa đọc',
               block_user: 'Chặn người dùng',

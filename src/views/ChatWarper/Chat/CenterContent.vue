@@ -18,6 +18,10 @@
       :message="message_data"
       ref="modal_zalo_create_group_ref"
     />
+    <ZaloShareMessage
+      :message="message_data"
+      ref="modal_zalo_share_message_ref"
+    />
   </template>
 </template>
 <script setup lang="ts">
@@ -28,13 +32,18 @@ import InputChat from '@/views/ChatWarper/Chat/CenterContent/InputChat.vue'
 import MessageList from '@/views/ChatWarper/Chat/CenterContent/MessageList.vue'
 // import AttachmentViewModal from '@/views/ChatWarper/Chat/CenterContent/AttachmentViewModal.vue'
 import ZaloPersonalModal from '@/views/ChatWarper/Chat/CenterContent/MessageList/MessageItem/PhoneAction/ZaloPersonalModal.vue'
+import ZaloShareMessage from '@/views/ChatWarper/Chat/CenterContent/MessageList/MessageItem/PhoneAction/ZaloShareMessage.vue'
 import StaffReadModal from '@/views/ChatWarper/Chat/CenterContent/StaffReadModal.vue'
 import UserInfo from '@/views/ChatWarper/Chat/CenterContent/UserInfo.vue'
 import { useRoute } from 'vue-router'
 import ZaloCreateGroup from './CenterContent/MessageList/MessageItem/PhoneAction/ZaloCreateGroup.vue'
 
-const { modal_zalo_personal_ref, message_data, modal_zalo_create_group_ref } =
-  storeToRefs(useMessageStore())
+const {
+  modal_zalo_personal_ref,
+  message_data,
+  modal_zalo_create_group_ref,
+  modal_zalo_share_message_ref,
+} = storeToRefs(useMessageStore())
 
 const $route = useRoute()
 </script>

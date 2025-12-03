@@ -7,6 +7,7 @@
     <ScrollToBottomBtn />
     <!-- Trả lời bình luận bài viết fb -->
     <ReplyComment v-if="messageStore.reply_comment?.root_comment_id" />
+    <ReplyMessage v-if="messageStore.reply_message?.root_message_id" />
     <ListLabel
       v-if="conversationStore.select_conversation?.conversation_type !== 'POST'"
     />
@@ -24,6 +25,7 @@ import ListLabel from '@/views/ChatWarper/Chat/CenterContent/InputChat/ListLabel
 import PreviewAttachment from '@/views/ChatWarper/Chat/CenterContent/InputChat/PreviewAttachment.vue'
 import MainInput from '@/views/ChatWarper/Chat/CenterContent/InputChat/MainInput.vue'
 import ReplyComment from '@/views/ChatWarper/Chat/CenterContent/InputChat/ReplyComment.vue'
+import ReplyMessage from './InputChat/ReplyMessage.vue'
 
 const $props = defineProps({
   /** Client id */
