@@ -48,7 +48,7 @@
       >
         <button
           @click="handleUndoMessage"
-          class="px-3 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2 rounded-md"
+          class="px-3 py-2 text-left text-xs hover:bg-slate-100 flex items-center gap-2 rounded-md"
         >
           <TrashIcon class="size-4" />
           {{ t('Thu hồi tin nhắn') }}
@@ -259,19 +259,19 @@ async function handleUndoMessage() {
 
   try {
     /** gọi API hoàn tác tin nhắn */
-    // await new Promise((resolve, reject) => {
-    //   undo_message(
-    //     {
-    //       page_id: PAGE_ID,
-    //       client_id: CLIENT_ID,
-    //       message_mid: $props.message?.message_mid || '',
-    //     },
-    //     (e, r) => {
-    //       if (e) return reject(e)
-    //       resolve(r)
-    //     }
-    //   )
-    // })
+    await new Promise((resolve, reject) => {
+      undo_message(
+        {
+          page_id: PAGE_ID,
+          client_id: CLIENT_ID,
+          message_mid: $props.message?.message_mid || '',
+        },
+        (e, r) => {
+          if (e) return reject(e)
+          resolve(r)
+        }
+      )
+    })
 
     /** thông báo thành công */
     $toast.success(t('Hoàn tác tin nhắn thành công'))

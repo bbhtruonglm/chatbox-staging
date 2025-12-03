@@ -9,64 +9,67 @@
       :position="message_type === 'client' ? 'RIGHT' : 'LEFT'"
       :message_type="message?.message_type"
     /> -->
-    <!-- Overlay cho trạng thái thu hồi -->
-    <div
-      v-if="message.is_undo_message || message.is_undone_success"
-      class="absolute inset-0 z-20 pointer-events-none"
-    >
-      <span
-        class="absolute bottom-1 right-1 text-[10px] font-medium text-slate-600 bg-white/90 px-2 py-0.5 rounded shadow-sm border border-slate-100"
+    <div class="grid">
+      <!-- Overlay cho trạng thái thu hồi -->
+      <div
+        v-if="message.is_undo_message || message.is_undone_success"
+        class="col-start-1 row-start-1 z-20 pointer-events-none flex items-end justify-end p-1"
       >
-        {{
-          message.is_undo_message
-            ? $t('Đang thu hồi...')
-            : $t('Tin nhắn đã bị thu hồi')
-        }}
-      </span>
-    </div>
+        <span
+          class="text-[10px] font-medium text-slate-600 bg-white/90 px-2 py-0.5 rounded shadow-sm border border-slate-100"
+        >
+          {{
+            message.is_undo_message
+              ? $t('Đang thu hồi...')
+              : $t('Tin nhắn đã bị thu hồi')
+          }}
+        </span>
+      </div>
 
-    <!-- Nội dung tin nhắn (làm mờ khi đang thu hồi hoặc đã thu hồi) -->
-    <div
-      :class="{
-        'opacity-60 pointer-events-none':
-          message.is_undo_message || message.is_undone_success,
-      }"
-    >
-      <ReplyMessage
-        v-if="reply_message"
-        :message="reply_message"
-      />
-      <AttachmentMessage
-        v-if="isSpecialCase()"
-        :message="message"
-        :type="message_type === 'client' ? 'CLIENT' : 'PAGE'"
-      />
-
-      <SliderWarper
-        v-else
-        :count_element="message_source?.length"
+      <!-- Nội dung tin nhắn (làm mờ khi đang thu hồi hoặc đã thu hồi) -->
+      <div
+        class="col-start-1 row-start-1"
+        :class="{
+          'opacity-60 pointer-events-none':
+            message.is_undo_message || message.is_undone_success,
+        }"
       >
-        <!-- 
-      không được xoá :key, nếu không sẽ lỗi, 
-      do vue 3 for 2 mảng lồng nhau gặp vấn đề về binding
-      sẽ bị binding nhầm data cũ
-      -->
-        <MessageTemplate
-          v-for="data_source of message_source"
-          :key="message?._id"
-          :class="addOnClassTemplate()"
-          :data_source="data_source"
-          :is_fix_size="message_source?.length > 1"
-          :message_type="message?.message_type"
-          :attachment_size
-          :message
-          :mentions="message?.raw?.data?.mentions"
+        <ReplyMessage
+          v-if="reply_message"
+          :message="reply_message"
         />
-        <PhoneAction
-          :message
-          v-if="messageStore.list_message_id === 'list-message'"
+        <AttachmentMessage
+          v-if="isSpecialCase()"
+          :message="message"
+          :type="message_type === 'client' ? 'CLIENT' : 'PAGE'"
         />
-      </SliderWarper>
+
+        <SliderWarper
+          v-else
+          :count_element="message_source?.length"
+        >
+          <!-- 
+        không được xoá :key, nếu không sẽ lỗi, 
+        do vue 3 for 2 mảng lồng nhau gặp vấn đề về binding
+        sẽ bị binding nhầm data cũ
+        -->
+          <MessageTemplate
+            v-for="data_source of message_source"
+            :key="message?._id"
+            :class="addOnClassTemplate()"
+            :data_source="data_source"
+            :is_fix_size="message_source?.length > 1"
+            :message_type="message?.message_type"
+            :attachment_size
+            :message
+            :mentions="message?.raw?.data?.mentions"
+          />
+          <PhoneAction
+            :message
+            v-if="messageStore.list_message_id === 'list-message'"
+          />
+        </SliderWarper>
+      </div>
     </div>
     <!-- <div
       v-if="message?.reaction?.emoji"
