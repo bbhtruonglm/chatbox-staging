@@ -1,11 +1,27 @@
 <template>
-  <div
-    class="message-box break-words whitespace-pre-line bg-[#FFF8E1]"
-    v-html="renderTextWithMentions"
-  ></div>
+  <div class="flex flex-col">
+    <!-- Reply Message bên ngoài message content -->
+    <ReplyMessage
+      v-if="snap_replay_message"
+      :message="snap_replay_message"
+    />
+
+    <!-- Message content -->
+    <div
+      class="rounded-lg p-2 gap-2.5 flex flex-col flex-shrink-0 bg-[#FFF8E1] max-w-[300px]"
+    >
+      <div
+        v-if="text"
+        class="text-sm break-words whitespace-pre-line"
+        v-html="renderTextWithMentions"
+      ></div>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
+import ReplyMessage from '@/views/ChatWarper/Chat/CenterContent/MessageList/ReplyMessage.vue'
+import type { MessageInfo } from '@/service/interface/app/message'
 
 const $props = withDefaults(
   defineProps<{
@@ -17,9 +33,13 @@ const $props = withDefaults(
       id?: string
       length?: number
     }[]
+    /**tin nhắn được reply */
+    snap_replay_message?: MessageInfo
   }>(),
   {}
 )
+
+console.log($props.snap_replay_message, 'snap_replay_message')
 
 function escapeHtml(text: string) {
   const map: Record<string, string> = {

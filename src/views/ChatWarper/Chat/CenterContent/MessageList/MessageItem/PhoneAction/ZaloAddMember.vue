@@ -88,9 +88,9 @@
               <input
                 type="checkbox"
                 :checked="selected_members.includes(conv)"
-                @click.stop
                 class="h-4 w-4 text-blue-600"
               />
+
               <img
                 :src="conv.client_avatar"
                 alt=""
@@ -120,6 +120,9 @@
 <script setup lang="ts">
 import { container } from 'tsyringe'
 import { computed, ref } from 'vue'
+import { Toast } from '@/utils/helper/Alert/Toast'
+
+const emit = defineEmits(['success'])
 
 import Modal from '@/components/Modal.vue'
 import type {
@@ -131,7 +134,13 @@ import { N13ZaloPersonal } from '@/utils/api/N13ZaloPersonal'
 import { N4SerivceAppConversation } from '@/utils/api/N4Service/Conversation'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { isEmpty, keys } from 'lodash'
+import { useI18n } from 'vue-i18n'
+import { Format } from '@/utils/helper/Format'
 
+const $format = container.resolve(Format)
+
+/** Hàm dịch */
+const $t = useI18n().t
 /** Stores quản lý org và page */
 const orgStore = useOrgStore()
 const pageStore = usePageStore()
@@ -173,6 +182,7 @@ const error_select_members = ref('')
 
 /** Khởi tạo trực tiếp instance API Zalo */
 const API_ZALO = new N13ZaloPersonal('app/page/group')
+const $toast = container.resolve(Toast)
 
 /**
  * @class Main
@@ -311,14 +321,16 @@ async function fetchAllConversations() {
 const FILTERED_CONVERSATION = computed(() => {
   /** Nếu không có key word thì trả về cả list */
   if (!search_conversation.value) return conversations.value
-  /** Xử lý to lowercase */
-  const KEYWORD = search_conversation.value.toLowerCase()
+  /** Xử lý to lowercase và xóa dấu */
+  const KEYWORD = $format.removeAccents(search_conversation.value).toLowerCase()
+
   /** Xử lý filter conversation phone và name */
-  return conversations.value.filter(
-    conv =>
-      (conv.client_name || '').toLowerCase().includes(KEYWORD) ||
-      (conv.client_phone || '').includes(KEYWORD)
-  )
+  return conversations.value.filter(conv => {
+    const NAME = $format.removeAccents(conv.client_name || '').toLowerCase()
+    const PHONE = $format.removeAccents(conv.client_phone || '').toLowerCase()
+
+    return NAME.includes(KEYWORD) || PHONE.includes(KEYWORD)
+  })
 })
 /** Hàm reset các select */
 async function handleRemoveSelect() {
@@ -350,12 +362,17 @@ async function handleAddMember() {
   try {
     /** Gọi API tạo group */
     const DATA = await API_ZALO.addMemberZalo(PAYLOAD)
-    console.log('Tạo group thành công:', DATA)
-
+    console.log('Thêm thành viên thành công:', DATA)
+    /** Reset selected_members */
     selected_members.value = []
+    /** Ẩn modal */
     modal_widget_add_group_ref.value?.toggleModal()
+    /** Thông báo thành công */
+    $toast.success($t('v1.common.add_member_success'))
+    /** Emit sự kiện thành công */
+    emit('success')
   } catch (err) {
-    console.error('Lỗi khi tạo group:', err)
+    console.error('Lỗi khi thêm thành viên:', err)
   }
 }
 

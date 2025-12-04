@@ -147,6 +147,7 @@
           <PageTempTextMessage
             :text="message.text"
             :mentions="message.mentions"
+            :snap_replay_message="message.snap_replay_message"
             :class="{
               'border border-red-500': message.error,
             }"
@@ -383,7 +384,9 @@ function socketNewMessage({ detail }: CustomEvent) {
   if (detail?.message_mid)
     remove(
       messageStore.send_message_list,
-      message => message.message_id === detail?.message_mid
+      message =>
+        message.message_id === detail?.message_mid ||
+        (message.replay_mid && message.replay_mid === detail?.replay_mid)
     )
 
   // nếu đang ở vị trí bottom thì dùng scrollToBottomMessage

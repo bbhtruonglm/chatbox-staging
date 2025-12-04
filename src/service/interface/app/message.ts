@@ -444,6 +444,10 @@ export interface TempSendMessage {
     /**chiều dài của nhắc đến */
     length?: number
   }[]
+  /**mid của tin được reply nếu có */
+  replay_mid?: string
+  /**nội dung tin nhắn trước đó được reply nếu có */
+  snap_replay_message?: MessageInfo
 }
 
 /**dữ liệu 1 file */

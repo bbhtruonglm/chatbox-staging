@@ -74,6 +74,7 @@ export const useMessageStore = defineStore('message_store', () => {
   }
   /**xoá dữ liệu trả lời bình luận */
   function clearReplyMessage() {
+    console.log('clearReplyMessage')
     reply_message.value = undefined
   }
 

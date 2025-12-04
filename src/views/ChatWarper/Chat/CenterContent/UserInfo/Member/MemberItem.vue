@@ -28,11 +28,16 @@
 import { useConversationStore, usePageStore } from '@/stores'
 import { N13ZaloPersonal } from '@/utils/api/N13ZaloPersonal'
 import { TrashIcon } from '@heroicons/vue/24/outline'
+import { container } from 'tsyringe'
+import { Toast } from '@/utils/helper/Alert/Toast'
 import { keys } from 'lodash'
 import { computed } from 'vue'
 
 import { confirm } from '@/service/helper/alert'
 import { useI18n } from 'vue-i18n'
+
+const emit = defineEmits(['delete-success'])
+
 /*Prod truyền vào từ cha**/
 const props = defineProps<{
   /**Avarta thành viên*/
@@ -55,6 +60,7 @@ const client_id = computed(
 
 /** Khởi tạo trực tiếp instance API Zalo */
 const API_ZALO = new N13ZaloPersonal('app/page/group')
+const $toast = container.resolve(Toast)
 
 /**
  * Xử lý Thêm thành viên vào nhóm trên Zalo
@@ -79,9 +85,11 @@ async function handleRemoveMember(member_id?: string) {
   try {
     /** Gọi API tạo group */
     const DATA = await API_ZALO.removeMemberZalo(PAYLOAD)
-    console.log('Tạo group thành công:', DATA)
+    console.log('Xóa thành viên thành công:', DATA)
+    $toast.success($t('v1.common.remove_member_success'))
+    emit('delete-success')
   } catch (err) {
-    console.error('Lỗi khi tạo group:', err)
+    console.error('Lỗi khi xóa thành viên:', err)
   }
 }
 

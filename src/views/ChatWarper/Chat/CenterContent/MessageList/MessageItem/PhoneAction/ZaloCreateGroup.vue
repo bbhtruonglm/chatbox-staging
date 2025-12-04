@@ -81,7 +81,6 @@
               <input
                 type="checkbox"
                 :checked="selected_members.includes(conv)"
-                @click.stop
                 class="h-4 w-4 text-blue-600"
               />
               <img
@@ -124,6 +123,9 @@ import { N13ZaloPersonal } from '@/utils/api/N13ZaloPersonal'
 import { N4SerivceAppConversation } from '@/utils/api/N4Service/Conversation'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { keys } from 'lodash'
+import { Format } from '@/utils/helper/Format'
+
+const $format = container.resolve(Format)
 
 /** Stores quản lý org và page */
 const orgStore = useOrgStore()
@@ -300,12 +302,16 @@ const FILTERED_CONVERSATION = computed(() => {
   /** Nếu không có key word thì trả về cả list */
   if (!search_conversation.value) return conversations.value
   /** Xử lý to lowercase */
-  const KEYWORD = search_conversation.value.toLowerCase()
+  const KEYWORD = $format.removeAccents(search_conversation.value.toLowerCase())
   /** Xử lý filter conversation phone và name */
   return conversations.value.filter(
     conv =>
-      (conv.client_name || '').toLowerCase().includes(KEYWORD) ||
-      (conv.client_phone || '').includes(KEYWORD)
+      $format
+        .removeAccents((conv.client_name || '').toLowerCase())
+        .includes(KEYWORD) ||
+      $format
+        .removeAccents((conv.client_phone || '').toLowerCase())
+        .includes(KEYWORD)
   )
 })
 

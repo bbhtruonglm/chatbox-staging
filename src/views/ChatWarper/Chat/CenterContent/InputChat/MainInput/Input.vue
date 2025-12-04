@@ -489,45 +489,44 @@ class Main {
     /**tạo id cho tin nhắn tạm */
     const TEMP_ID = uniqueId(text)
 
+    /** Tìm tin nhắn đang được reply */
+    const REPLY_MESSAGE = messageStore.list_message.find(
+      m => m.message_mid === messageStore.reply_message?.message_id
+    )
+    console.log(REPLY_MESSAGE, 'REPLY_MESSAGE')
     /** thêm vào danh sách tin nhắn tạm */
     messageStore.send_message_list.push({
       text,
       time: new Date().toISOString(),
       temp_id: TEMP_ID,
+      replay_mid: messageStore.reply_message?.message_id,
+      snap_replay_message: REPLY_MESSAGE,
     })
-    /**gửi bình luận */
-    const RES = await this.API_MESSAGE.sendReplyMessage(
-      page_id,
-      client_id,
-      text,
-      messageStore.reply_message?.message_id || '',
-      PAGE?.org_id || ''
-    )
 
-    /** nếu có lỗi thì throw ra */
-    if (get(RES, 'error')) {
-      throw get(RES, 'error')
+    try {
+      /**gửi bình luận */
+      const RES = await this.API_MESSAGE.sendReplyMessage(
+        page_id,
+        client_id,
+        text,
+        messageStore.reply_message?.message_id || '',
+        PAGE?.org_id || ''
+      )
+
+      /** nếu có lỗi thì throw ra */
+      if (get(RES, 'error')) {
+        throw get(RES, 'error')
+      }
+
+      /** cập nhật id tin nhắn thật vào tin nhắn tạm */
+      if (RES?.message_id) {
+        messageStore.updateTempMessage(TEMP_ID, 'message_id', RES.message_id)
+      }
+    } catch (e) {
+      /** đánh dấu tin nhắn tạm là có lỗi */
+      messageStore.updateTempMessage(TEMP_ID, 'error', true)
+      console.error('Lỗi khi gửi reply message:', e)
     }
-
-    // /**bình luận được trả lời */
-    // const COMMENT =
-    //   messageStore.list_message?.[
-    //     messageStore.reply_comment?.message_index || 0
-    //   ]
-
-    // /** tiêm dữ liệu trả lời vào bình luận này */
-    // COMMENT?.reply_comments?.unshift({
-    //   comment_id: RES.id || '',
-    //   message: text,
-    //   from: { name: conversationStore.getPage()?.name },
-    //   createdAt: new Date().toISOString(),
-    // })
-
-    /** loại bỏ comment này khỏi danh sách */
-    // remove(messageStore.list_message, message => message._id === COMMENT._id)
-
-    /** thêm lại vào cuối */
-    // messageStore.list_message.push(COMMENT)
 
     /** xoá dữ liệu trả lời */
     messageStore.clearReplyMessage()
