@@ -16,6 +16,7 @@
         ><ArrowUturnLeftIcon class="size-4"
       /></span>
       <span
+        v-if="can_share_message"
         v-tooltip="t('Chuyển tiếp')"
         @click="
           () => {
@@ -152,6 +153,41 @@ const position_class = computed(() => {
 const { modal_zalo_share_message_ref, message_data } = storeToRefs(
   useMessageStore()
 )
+
+/**
+ * Kiểm tra tin nhắn có thể chia sẻ được không
+ * Chỉ cho phép chia sẻ tin nhắn text hoặc tin nhắn có attachment là image
+ */
+const can_share_message = computed(() => {
+  /** Nếu không có tin nhắn thì không cho chia sẻ */
+  if (!$props.message) return false
+
+  /** Lấy danh sách attachment */
+  const ATTACHMENTS = $props.message.message_attachments || []
+
+  /** Nếu không có attachment, chỉ có text thì cho phép chia sẻ */
+  if (ATTACHMENTS.length === 0) return true
+
+  /** Kiểm tra tất cả attachment */
+  const HAS_VALID_ATTACHMENTS = ATTACHMENTS.every(attachment => {
+    /** Nếu attachment chỉ có _id mà không có type, cho phép chia sẻ */
+    if (!attachment.type) return true
+
+    /** Chỉ cho phép image (không cho video, audio, file vì có vấn đề đuôi file) */
+    if (attachment.type !== 'image') return false
+
+    /** Kiểm tra có URL hợp lệ không */
+    const url =
+      attachment.url ||
+      attachment.payload?.url ||
+      attachment.payload?.elements?.[0]?.image_url
+
+    /** Nếu không có URL, vẫn cho phép (có thể đang load) */
+    return true
+  })
+
+  return HAS_VALID_ATTACHMENTS
+})
 
 /**kích hoạt trả lời bình luận này */
 function replyComment(type: IReplyCommentType) {

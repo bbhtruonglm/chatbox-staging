@@ -148,10 +148,11 @@
             :text="message.text"
             :mentions="message.mentions"
             :snap_replay_message="message.snap_replay_message"
-            :class="{
-              'border border-red-500': message.error,
-            }"
+            :is_error="message.error"
           />
+          <!-- :class="{
+            'border border-red-500 rounded-lg': message.error,
+          }" -->
           <StaffAvatar
             :id="chatbotUserStore.chatbot_user?.user_id"
             class="w-6 h-6 rounded-oval flex-shrink-0"

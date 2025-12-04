@@ -46,6 +46,8 @@ declare global {
         /**liên hệ */
         contact: string
       }
+      /**proxy cho video zalo personal */
+      proxy_video: string
     }
     external_link: IExternalLink
     /**cài đặt cho riêng facebook */

@@ -28,6 +28,7 @@ const ENV: IEnv = {
     merchant: {
       contact: import.meta.env.VITE_HOST_MERCHANT_CONTACT,
     },
+    proxy_video: import.meta.env.VITE_HOST_PROXY_VIDEO,
   },
   external_link: {
     setting: import.meta.env.VITE_EXTERNAL_SETTING,

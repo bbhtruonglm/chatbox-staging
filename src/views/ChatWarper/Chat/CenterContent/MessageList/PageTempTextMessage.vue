@@ -4,11 +4,15 @@
     <ReplyMessage
       v-if="snap_replay_message"
       :message="snap_replay_message"
+      :is_error="is_error"
     />
 
     <!-- Message content -->
     <div
       class="rounded-lg p-2 gap-2.5 flex flex-col flex-shrink-0 bg-[#FFF8E1] max-w-[300px]"
+      :class="{
+        'border border-red-500 rounded-lg': is_error,
+      }"
     >
       <div
         v-if="text"
@@ -35,6 +39,8 @@ const $props = withDefaults(
     }[]
     /**tin nhắn được reply */
     snap_replay_message?: MessageInfo
+    /**có lỗi hay không */
+    is_error?: boolean
   }>(),
   {}
 )
