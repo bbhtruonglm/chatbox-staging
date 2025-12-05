@@ -168,6 +168,42 @@ export class N4SerivceAppConversation extends N4Serivce {
       bot_resume_after,
     })
   }
+
+  /**
+   * Chấp nhận lời mời kết bạn Zalo
+   * @param page_id id trang
+   * @param client_id id khách hàng
+   */
+  async acceptFriendRequest(
+    page_id: string,
+    client_id: string
+  ): Promise<{
+    /**kết quả chấp nhận */
+    success?: boolean
+  }> {
+    return this.post('accept_friend_request', {
+      page_id,
+      client_id,
+    })
+  }
+
+  /**
+   * Từ chối lời mời kết bạn Zalo
+   * @param page_id id trang
+   * @param client_id id khách hàng
+   */
+  async declineFriendRequest(
+    page_id: string,
+    client_id: string
+  ): Promise<{
+    /**kết quả từ chối */
+    success?: boolean
+  }> {
+    return this.post('decline_friend_request', {
+      page_id,
+      client_id,
+    })
+  }
 }
 @singleton()
 export class N4SerivceAppMessage extends N4Serivce {

@@ -528,6 +528,8 @@ export type ButtonType =
   | 'bbh_phone'
   | 'bbh_sale'
   | 'bbh_shipping'
+  | 'zlp_accept'
+  | 'zlp_decline'
 
 /**dữ liệu dạng nút bấm */
 export interface ChatbotButton {

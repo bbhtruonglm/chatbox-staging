@@ -179,6 +179,14 @@ watch(
     if (is_ai) is_expanded.value = false
   }
 )
+// theo dõi khi có socket update tin nhắn hiện tại
+watch(
+  () => $props.data_source,
+  value => {
+    // -> true: tức là tin nhắn mới được xử lý AI -> đóng content
+    console.log(value, 'value')
+  }
+)
 
 /**kiểm tra xem tin nhắn có đính kèm file không */
 function isHaveFileAttachment() {

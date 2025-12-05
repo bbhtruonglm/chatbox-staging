@@ -970,6 +970,8 @@ const source: Language = {
                 place_order: 'Place order',
                 create_transaction: 'Create transaction',
                 schedule_appointment: 'Schedule appointment',
+                accept: 'Accept',
+                decline: 'Decline',
               },
               widget: {
                 not_active: 'Widget not found',

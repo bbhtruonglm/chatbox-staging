@@ -1,4 +1,3 @@
-import type { FacebookCommentPost } from '@/service/interface/app/post'
 import { N4Serivce } from '@/utils/api/N4Serivce'
 import { singleton } from 'tsyringe'
 

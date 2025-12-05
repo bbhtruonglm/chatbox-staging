@@ -767,6 +767,8 @@ const source: Language = {
                 place_order: 'Tạo đơn hàng',
                 create_transaction: 'Tạo giao dịch',
                 schedule_appointment: 'Lập lịch',
+                accept: 'Đồng ý',
+                decline: 'Từ chối',
               },
               widget: {
                 not_active: 'Không tìm thấy widget',
