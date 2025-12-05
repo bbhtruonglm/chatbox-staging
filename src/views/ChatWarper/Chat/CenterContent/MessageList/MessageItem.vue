@@ -12,26 +12,21 @@
     <div class="grid">
       <!-- Overlay cho trạng thái thu hồi -->
       <div
-        v-if="message.is_undo_message || message.is_undone_success"
+        v-if="message.is_undo"
         class="col-start-1 row-start-1 z-20 pointer-events-none flex items-end justify-end p-1"
       >
-        <span
+        <!-- <span
           class="text-[10px] font-medium text-slate-600 bg-white/90 px-2 py-0.5 rounded shadow-sm border border-slate-100"
         >
-          {{
-            message.is_undo_message
-              ? $t('Đang thu hồi...')
-              : $t('Tin nhắn đã bị thu hồi')
-          }}
-        </span>
+          {{ $t('Tin nhắn đã bị thu hồi') }}
+        </span> -->
       </div>
 
       <!-- Nội dung tin nhắn (làm mờ khi đang thu hồi hoặc đã thu hồi) -->
       <div
         class="col-start-1 row-start-1"
         :class="{
-          'opacity-60 pointer-events-none':
-            message.is_undo_message || message.is_undone_success,
+          'opacity-60 pointer-events-none': message.is_undo,
         }"
       >
         <ReplyMessage
@@ -121,9 +116,10 @@
     />
     <MessageReaction
       v-if="
-        message_type === 'client' ||
-        message_type === 'page' ||
-        message_type === 'group'
+        (message_type === 'client' ||
+          message_type === 'page' ||
+          message_type === 'group') &&
+        !message.is_undo
       "
       :class="{
         'right-0': message_type !== 'client',
@@ -137,7 +133,7 @@
         (message_type === 'client' ||
           message_type === 'page' ||
           message_type === 'group') &&
-        !message.is_undone_success
+        !message.is_undo
       "
       :fb_page_id="message.fb_page_id"
       :sender_id="message.sender_id"
@@ -213,112 +209,6 @@ const attachments = computed(() => $props.message?.message_attachments)
 const primary_emotion = computed(() => $props.message?.ai?.[0]?.emotion)
 /**AI đánh dấu tin này bị rep chậm */
 const is_ai_slow_reply = computed(() => $props.message?.is_ai_slow_reply)
-/**dữ liệu của tin nhắn */
-// const message_source = computed<MessageTemplateInput[]>(() => {
-//   /**
-//    * - chỉ lấy dữ liệu của attr đầu tiên
-//    * - nếu có nhiều attr thì xử lý kiểu khác (hiện tại chỉ có FB là có list attr là dạng ảnh)
-//    */
-//   const SOURCE = attachments.value?.[0]
-
-//   /**kết quả trả về */
-//   let result: MessageTemplateInput[] = []
-
-//   // nếu không attr -> văn bản thuần tuý | nếu không có thì báo lỗi
-//   if (!SOURCE?.payload)
-//     result.push({
-//       is_ai: false,
-//       content:
-//         text.value || postback_title.value || $t('v1.common.unsupport_message'),
-//     })
-
-//   // nếu chỉ có các nút bấm -> chỉ tạo 1 record
-//   if (SOURCE?.payload?.buttons)
-//     result.push({
-//       is_ai: false,
-//       // nút bấm sẽ kèm theo một nội dung tin nhắn nào đó
-//       content: text.value,
-//       // map lại dữ liệu nút bấm
-//       list_button: formatButton(SOURCE.payload.buttons),
-//     })
-
-//   // nếu là dạng element (slider, file đã xử lý AI) -> tạo 1 mảng dữ liệu
-//   if (SOURCE?.payload?.elements)
-//     result.push(
-//       ...SOURCE?.payload?.elements?.map((element, index) => {
-//         /**dữ liệu của 1 template */
-//         let res: MessageTemplateInput = {}
-
-//         // tạm thời chỉ hiện AI với image
-//         if ($props.message?.ai?.[0]?.ocr) res.is_ai = true
-//         else res.is_ai = false
-
-//         // thêm dữ liệu AI nếu có
-//         if ($props.message?.ai?.[index]) res.ai = $props.message?.ai?.[index]
-
-//         // tiêu đề
-//         res.title = element.title
-//         // nội dung văn bản, hoặc url file fb không hiển thị được
-//         res.content = element.subtitle || text.value || element.url
-//         // dữ liệu ocr của AI
-//         res.ocr = $props.message?.ai?.[0]?.ocr
-//         // danh sách nút bấm
-//         if (element?.buttons) res.list_button = formatButton(element?.buttons)
-
-//         // hình ảnh của slider
-//         if (element.image_url) res.image = { url: element.image_url }
-
-//         // video của AI
-//         if (element.video_url) res.video = { url: element.video_url }
-//         // âm thanh của AI
-//         if (element.audio_url) res.audio = { url: element.audio_url }
-//         // file của AI
-//         if (element.file_url) res.file = { url: element.file_url }
-
-//         // trả về dữ liệu
-//         return res
-//       })
-//     )
-
-//   // nếu chỉ có url (là file nhưng chưa xử lý AI, link dạng fallback) -> tạo 1 record
-//   if (SOURCE?.payload?.url && !SOURCE?.payload?.elements) {
-//     /**dữ liệu của 1 template */
-//     let res: MessageTemplateInput = {}
-
-//     // tính là chưa xử lý AI
-//     res.is_ai = false
-
-//     // hình ảnh
-//     if (SOURCE?.type === 'image') res.image = { url: SOURCE.payload.url }
-//     // video
-//     if (SOURCE?.type === 'video') res.video = { url: SOURCE.payload.url }
-//     // âm thanh
-//     if (SOURCE?.type === 'audio') res.audio = { url: SOURCE.payload.url }
-//     // tập tin khác
-//     if (SOURCE?.type === 'file') res.file = { url: SOURCE.payload.url }
-//     // link
-//     if (SOURCE?.type === 'fallback') {
-//       res.title = text.value
-//       res.content = SOURCE.payload.title
-//       res.list_button = [
-//         {
-//           title: $t('v1.view.main.dashboard.chat.action.open_url'),
-//           url: SOURCE.payload.url,
-//           type: 'web_url',
-//         },
-//       ]
-//     }
-
-//     // trường hợp vừa có ảnh vừa có text
-//     if (text.value) res.content = text.value
-
-//     // trả về dữ liệu
-//     result.push(res)
-//   }
-
-//   // trả về mảng
-//   return result
-// })
 
 const message_source = computed<MessageTemplateInput[]>(() =>
   $mesage_service.genMessageSource(

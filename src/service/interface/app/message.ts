@@ -210,10 +210,8 @@ export interface MessageInfo {
   sender_id?: string
   /** raw message */
   raw?: any
-  /** đang thu hồi tin nhắn */
-  is_undo_message?: boolean
-  /** đã thu hồi tin nhắn thành công (client state) */
-  is_undone_success?: boolean
+  /** tin nhắn đã thu hồi */
+  is_undo?: boolean
 }
 
 /**

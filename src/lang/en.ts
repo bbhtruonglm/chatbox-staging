@@ -390,6 +390,11 @@ const source: Language = {
         'Are you sure you want to change the access token? This will stop all APIs from working.',
       create_new_token: 'Create new token',
       tiktok: 'Tiktok',
+      add_member_success: 'Add member success',
+      remove_member_success: 'Remove member success',
+      sending_message: 'Sending message...',
+      sent_success: 'Sent success',
+      sent_failed: 'Sent failed',
     },
     view: {
       network: {

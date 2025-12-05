@@ -193,6 +193,9 @@ const source: Language = {
       tiktok: 'Tiktok',
       add_member_success: 'Thêm thành viên thành công',
       remove_member_success: 'Xóa thành viên thành công',
+      sending_message: 'Đang gửi tin nhắn...',
+      sent_success: 'Gửi thành công',
+      sent_failed: 'Gửi thất bại',
     },
     view: {
       network: {

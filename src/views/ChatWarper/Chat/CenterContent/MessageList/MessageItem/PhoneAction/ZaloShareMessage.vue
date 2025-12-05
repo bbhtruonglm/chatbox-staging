@@ -302,7 +302,7 @@
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Đang gửi tin nhắn...
+                  {{ $t('v1.common.sending_message') }}
                 </div>
 
                 <!-- Success -->
@@ -327,7 +327,7 @@
                       d="M5 13l4 4L19 7"
                     ></path>
                   </svg>
-                  Gửi thành công
+                  {{ $t('v1.common.sent_success') }}
                 </div>
 
                 <!-- Error -->
@@ -352,7 +352,7 @@
                       d="M6 18L18 6M6 6l12 12"
                     ></path>
                   </svg>
-                  Gửi thất bại
+                  {{ $t('v1.common.sent_failed') }}
                 </div>
               </div>
             </div>
@@ -375,7 +375,7 @@
               class="w-full"
             >
               <div class="flex justify-between text-xs text-slate-600 mb-1">
-                <span>Đang gửi tin nhắn...</span>
+                <span>{{ $t('v1.common.sending_message') }}</span>
                 <span>{{ shared_count }}/{{ total_share }}</span>
               </div>
               <div class="w-full bg-slate-200 rounded-full h-2">
@@ -425,9 +425,11 @@
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Đang gửi...
+                {{ $t('v1.common.sending_message') }}
               </span>
-              <span v-else-if="has_sent_messages">Đã gửi</span>
+              <span v-else-if="has_sent_messages">{{
+                $t('v1.common.sent_success')
+              }}</span>
               <span v-else>{{ $t('v1.common.share_to') }}</span>
             </button>
           </div>
@@ -599,11 +601,30 @@ class Main {
     modal_widget__group_share_ref.value?.toggleModal()
     is_modal_open.value = !is_modal_open.value
     if (is_modal_open.value) {
+      /**
+       * Reset data gửi tin nhắn từ message_data
+       * Cần thiết khi chia sẻ lại cùng 1 tin nhắn (watch không chạy)
+       * hoặc khi tin nhắn trước đó đã bị edit nội dung trong modal
+       */
+      sending_message.value = message_data.value?.message_text || ''
+      sending_media.value = message_data.value?.message_attachments || []
+
+      /** Reset lại trạng thái để đảm bảo sạch sẽ khi mở lại */
+      selected_members.value = []
+      sent_members.value = []
+      member_share_status.value.clear()
+      history_share_status.value.clear()
+      shared_count.value = 0
+      total_share.value = 0
+      search_conversation.value = ''
+      group_name.value = ''
+
       fetchAllConversations()
     } else {
       selected_members.value = []
       sent_members.value = []
       member_share_status.value.clear()
+      history_share_status.value.clear()
       shared_count.value = 0
       total_share.value = 0
       search_conversation.value = ''
@@ -744,21 +765,20 @@ async function shareMessage() {
   const page_id = PAGE_IDS[0] || ''
   /** Lấy list page */
   const LIST = orgStore.list_os || []
-  /** lấy page trùng với page hiện tại */
-  const PAGE = LIST.find(p => p.page_id === page_id)
 
   /** Lặp qua danh sách thành viên đã chọn */
   for (const member of selected_members.value) {
     const MEMBER_KEY = `${member.fb_client_id}_${member.fb_page_id}`
-
+    console.log('MEMBER_KEY', MEMBER_KEY)
     /** Set trạng thái đang gửi */
     member_share_status.value.set(MEMBER_KEY, 'sending')
-
+    console.log('member_share_status.value', member_share_status.value)
     try {
-      /** Kiểm tra có attachment không */
+      /** Kiểm tra và xử lý attachment */
+      let ATTACHMENTS: { url: string; type: 'image' }[] = []
       if (sending_media.value && sending_media.value.length > 0) {
         /** Chuyển đổi attachment sang định dạng API yêu cầu */
-        const ATTACHMENTS = sending_media.value
+        ATTACHMENTS = sending_media.value
           .filter(media => media.type === 'image')
           .map(media => {
             /** Lấy URL từ nhiều nguồn khác nhau */
@@ -775,43 +795,47 @@ async function shareMessage() {
 
             return { url, type }
           })
-          .filter(item => item.url)
-
-        console.log(ATTACHMENTS, 'ATTACHMENTS')
-
-        /** Nếu có attachment hợp lệ thì gửi */
-        if (ATTACHMENTS.length > 0) {
-          /** Gọi API gửi tin nhắn với attachment */
-          await new Promise((resolve, reject) =>
-            send_message(
-              {
-                page_id,
-                client_id: member.fb_client_id,
-                text: sending_message.value || undefined,
-                attachments: ATTACHMENTS as {
-                  url: string
-                  type: 'image'
-                }[],
-              },
-              (e: any, r: any) => {
-                /** Nếu có lỗi thì reject */
-                if (e) return reject(e)
-                /** Nếu thành công thì resolve */
-                resolve(r)
-              }
-            )
-          )
-        }
-      } else if (sending_message.value) {
-        /** Chỉ gửi text nếu không có attachment */
-        await API_MESSAGE.sendMessage(
-          page_id,
-          member.fb_client_id,
-          sending_message.value,
-          PAGE?.org_id || ''
-        )
+          .filter(item => item.url) as { url: string; type: 'image' }[]
       }
 
+      console.log(ATTACHMENTS, 'ATTACHMENTS')
+
+      /** Nếu có attachment hợp lệ thì gửi */
+      if (ATTACHMENTS.length > 0) {
+        /** Gọi API gửi tin nhắn với attachment */
+        await new Promise((resolve, reject) =>
+          send_message(
+            {
+              page_id: member.fb_page_id,
+              client_id: member.fb_client_id,
+              text: sending_message.value || undefined,
+              attachments: ATTACHMENTS,
+            },
+            (e: any, r: any) => {
+              /** Nếu có lỗi thì reject */
+              if (e) return reject(e)
+              /** Nếu thành công thì resolve */
+              resolve(r)
+            }
+          )
+        )
+      } else if (sending_message.value) {
+        /** Tìm page tương ứng với member để lấy org_id */
+        const MEMBER_PAGE = LIST.find(p => p.page_id === member.fb_page_id)
+        console.log(MEMBER_PAGE, 'MEMBER_PAGE')
+        console.log(member.fb_page_id, 'member.fb_page_id')
+        console.log(member.fb_client_id, 'member.fb_client_id')
+        console.log(sending_message.value, 'sending_message.value')
+        console.log(MEMBER_PAGE?.org_id, 'MEMBER_PAGE?.org_id')
+        /** Chỉ gửi text nếu không có attachment */
+        await API_MESSAGE.sendMessage(
+          member.fb_page_id,
+          member.fb_client_id,
+          sending_message.value,
+          MEMBER_PAGE?.org_id || ''
+        )
+      }
+      console.log(sending_message.value, 'sending_message.value')
       /** Set trạng thái thành công */
       member_share_status.value.set(MEMBER_KEY, 'success')
       /** Tăng số lượng đã gửi */

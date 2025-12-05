@@ -28,6 +28,7 @@
         ><ArrowUturnRightIcon class="size-4"
       /></span>
       <span
+        v-if="message?.message_type === 'page'"
         ref="trigger_ref"
         @click="togglePopover"
         class="hover:bg-slate-300 rounded-lg p-0.5"
@@ -48,6 +49,7 @@
         class="w-[200px] shadow-lg rounded-md p-1 bg-white flex flex-col gap-1"
       >
         <button
+          v-if="message?.message_type === 'page'"
           @click="handleUndoMessage"
           class="px-3 py-2 text-left text-xs hover:bg-slate-100 flex items-center gap-2 rounded-md"
         >
@@ -147,7 +149,7 @@ const position_class = computed(() => {
    * nếu tin nhắn bên phải -> action bên trái
    * nếu tin nhắn bên trái -> action bên phải
    */
-  return is_right_side ? '-left-[72px]' : '-right-[72px]'
+  return is_right_side ? 'right-full mr-1' : 'left-full ml-1'
 })
 
 const { modal_zalo_share_message_ref, message_data } = storeToRefs(
@@ -291,7 +293,7 @@ async function handleUndoMessage() {
   }
 
   /** cập nhật trạng thái đang thu hồi */
-  if ($props.message) $props.message.is_undo_message = true
+  if ($props.message) $props.message.is_undo = true
 
   try {
     /** gọi API hoàn tác tin nhắn */
@@ -310,21 +312,21 @@ async function handleUndoMessage() {
     })
 
     /** thông báo thành công */
-    $toast.success(t('Hoàn tác tin nhắn thành công'))
+    $toast.success(t('Thu hồi tin nhắn thành công'))
 
     /** cập nhật trạng thái thành công */
-    if ($props.message) {
-      $props.message.is_undo_message = false
-      $props.message.is_undone_success = true
-    }
+    // if ($props.message) {
+    //   $props.message.is_undo_message = false
+    //   $props.message.is_undone_success = true
+    // }
 
     /** TODO: Cập nhật lại danh sách tin nhắn nếu cần */
   } catch (error) {
     console.error('Error undoing message:', error)
-    $toast.error(t('Hoàn tác tin nhắn thất bại'))
+    $toast.error(t('Thu hồi tin nhắn thất bại'))
 
     /** hoàn tác trạng thái nếu lỗi */
-    if ($props.message) $props.message.is_undo_message = false
+    if ($props.message) $props.message.is_undo = false
   }
 }
 
