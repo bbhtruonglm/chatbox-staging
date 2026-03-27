@@ -90,8 +90,8 @@ const original_members = ref<IGroupMember[]>([])
 const selected_member_index = ref(0)
 /** Cache danh sách thành viên theo group_id */
 const members_cache = ref<Record<string, IGroupMember[]>>({})
-/** Trạng thái đang load */
-const is_loading = ref(false)
+/** Cache trạng thái đang load theo group_id */
+const loading_map = ref<Record<string, boolean>>({})
 /** Lưu thông tin members đã chọn trong input hiện tại */
 const selected_members_map = ref<Map<string, string>>(new Map())
 
@@ -142,7 +142,7 @@ function toggleModal(is_clear_input?: boolean) {
   if (!INPUT_CHAT) return
 
   /** xóa nội dung input nếu được yêu cầu */
-  if (is_clear_input && INPUT_CHAT.innerText === '@')
+  if (is_clear_input && INPUT_CHAT.innerText?.trim() === '@')
     $input_service.setInputText('')
 }
 
@@ -169,26 +169,29 @@ async function changeModalPosition() {
 
 /** Preload danh sách thành viên nhóm (gọi trước) */
 async function preloadGroupMembers() {
-  if (!page_id.value || !group_id.value) return
+  const current_page_id = page_id.value
+  const current_group_id = group_id.value
+
+  if (!current_page_id || !current_group_id) return
 
   /** nếu đã có cache thì thôi */
-  if (members_cache.value[group_id.value]) return
+  if (members_cache.value[current_group_id]) return
 
   /** nếu đang load thì thôi */
-  if (is_loading.value) return
+  if (loading_map.value[current_group_id]) return
 
-  is_loading.value = true
+  loading_map.value[current_group_id] = true
 
   try {
     /**danh sách thành viên nhóm từ API */
     const GROUP_MEMBERS = await $api_zalo.getGroupMenbers(
-      page_id.value,
-      group_id.value
+      current_page_id,
+      current_group_id
     )
 
     /** nếu không có thành viên thì lưu mảng rỗng */
     if (!GROUP_MEMBERS || !GROUP_MEMBERS.length) {
-      members_cache.value[group_id.value] = []
+      members_cache.value[current_group_id] = []
       return
     }
 
@@ -200,15 +203,15 @@ async function preloadGroupMembers() {
     }
 
     /** lưu vào cache */
-    members_cache.value[group_id.value] = [ALL_OPTION, ...GROUP_MEMBERS]
+    members_cache.value[current_group_id] = [ALL_OPTION, ...GROUP_MEMBERS]
   } catch (error) {
     console.error('Error preloading group members:', error)
     /** lưu mảng rỗng vào cache để không gọi lại */
-    if (group_id.value) {
-      members_cache.value[group_id.value] = []
+    if (current_group_id) {
+      members_cache.value[current_group_id] = []
     }
   } finally {
-    is_loading.value = false
+    loading_map.value[current_group_id] = false
   }
 }
 
@@ -228,7 +231,9 @@ async function loadGroupMembers() {
     return
   }
 
-  /** nếu chưa có cache thì gọi API */
+  /** nếu chưa có cache thì xóa list hiện tại và gọi API */
+  list_members.value = []
+  original_members.value = []
   await preloadGroupMembers()
 
   /** sau khi gọi API xong, load lại từ cache */

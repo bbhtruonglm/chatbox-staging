@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { saveIndexedDB, getIndexedDB, removeIndexedDB } from '@/service/helper/store'
+import {
+  saveIndexedDB,
+  getIndexedDB,
+  removeIndexedDB,
+} from '@/service/helper/store'
 import { saveLocal, getLocal } from '@/service/helper/store'
 
 import type { PageData, PageList } from '@/service/interface/app/page'
@@ -17,7 +21,11 @@ import type {
 } from '@/service/interface/app/billing'
 import type { ILabel } from '@/service/interface/app/label'
 import { usePageManager } from '@/views/Dashboard/composables/usePageManager'
-import { useOrgStore, usePageManagerStore, useSelectPageStore } from './dashboard'
+import {
+  useOrgStore,
+  usePageManagerStore,
+  useSelectPageStore,
+} from './dashboard'
 
 export const usePageStore = defineStore('page_store', () => {
   /** -------------- STAGE -------------- */
@@ -32,11 +40,7 @@ export const usePageStore = defineStore('page_store', () => {
   const all_page_list = ref<PageList>({})
 
   // đọc dữ liệu được lưu ở indexeddb
-  getIndexedDB(
-    'all_page_list',
-    undefined,
-    (e, r) => (all_page_list.value = r)
-  )
+  getIndexedDB('all_page_list', undefined, (e, r) => (all_page_list.value = r))
   // lưu dữ liệu xuống indexed khi có thay đổi
   saveIndexedDB(all_page_list, 'all_page_list')
 
@@ -49,6 +53,7 @@ export const usePageStore = defineStore('page_store', () => {
     get: () => {
       /** dữ liệu các page sau khi lọc */
       let result = all_page_list.value
+
       // lọc theo nền tảng đang chọn
       result = filterPageByPlatform(result, selectPageStore.current_menu)
       // lọc theo tìm kiếm
@@ -61,17 +66,11 @@ export const usePageStore = defineStore('page_store', () => {
   })
 
   // đọc dữ liệu được lưu ở indexeddb
-  getIndexedDB(
-    'active_page_list',
-    undefined,
-    (e, r) => {
-      if(r) removeIndexedDB('active_page_list')
-    }
-  )
+  getIndexedDB('active_page_list', undefined, (e, r) => {
+    if (r) removeIndexedDB('active_page_list')
+  })
   // lưu dữ liệu xuống indexed khi có thay đổi
   // saveIndexedDB(active_page_list, 'active_page_list')
-
-  
 
   // đọc dữ liệu được lưu ở indexeddb
   getIndexedDB('map_orgs', undefined, (e, r) => (map_orgs.value = r))
@@ -87,6 +86,20 @@ export const usePageStore = defineStore('page_store', () => {
 
   /**dữ liệu của các page được chọn khi vào trang chat */
   const selected_page_list_info = ref<PageList>({})
+  /**
+   * Cờ trung gian dùng riêng cho flow "page mất quyền truy cập".
+   * Mục đích:
+   * - Dashboard vẫn cho người dùng bấm vào page bị mất quyền như page thường.
+   * - Thông tin page được giữ tạm ở store trong lúc điều hướng sang màn chat.
+   * - Khi ChatWarper load xong dữ liệu page, nó sẽ đọc cờ này để quyết định
+   *   có cần bật popup cảnh báo hay không.
+   * - Sau khi popup được xử lý, cờ này phải được xóa để tránh hiện lại sai thời điểm.
+   */
+  const pending_disconnected_page_warning = ref<{
+    page_id?: string
+    org_id?: string
+    page_type?: string
+  }>()
 
   /**lấy dữ liệu của nhân viên của trang */
   function getStaff(
@@ -204,11 +217,17 @@ export const usePageStore = defineStore('page_store', () => {
     else delete selected_page_id_list.value[page_id]
   }
 
+  /** Xóa cờ cảnh báo tạm sau khi màn chat đã tiêu thụ xong dữ liệu này. */
+  function clearPendingDisconnectedPageWarning() {
+    pending_disconnected_page_warning.value = undefined
+  }
+
   return {
     all_page_list,
     active_page_list,
     selected_page_id_list,
     selected_page_list_info,
+    pending_disconnected_page_warning,
     widget_list,
     selected_pages_staffs,
     market_widgets,
@@ -218,6 +237,7 @@ export const usePageStore = defineStore('page_store', () => {
     countSelectedPage,
     isSelectedPage,
     setPageSelected,
+    clearPendingDisconnectedPageWarning,
     countActivePage,
     getStaff,
     getPage,

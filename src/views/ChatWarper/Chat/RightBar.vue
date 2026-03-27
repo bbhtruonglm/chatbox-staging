@@ -1,7 +1,9 @@
 <template>
+  <SkeletonLoading v-if="is_loading" />
   <div
+    v-else
     id="chat__right-bar"
-    class="w-[400px] h-full flex-shrink-0 overflow-y-auto flex flex-col gap-2"
+    class="w-full h-full flex-shrink-0 overflow-y-auto flex flex-col gap-2"
   >
     <PostRightBar
       v-if="conversationStore.select_conversation?.conversation_type === 'POST'"
@@ -75,7 +77,7 @@
               class="w-full h-full"
               :src="widget.url"
               frameborder="0"
-              allow="microphone; camera; autoplay; speaker"
+              allow="microphone; camera; autoplay; speaker; clipboard-read; clipboard-write; fullscreen"
             />
           </div>
         </div>
@@ -189,7 +191,7 @@ import {
   useConversationStore,
   useOrgStore,
   usePageStore,
-  useWidgetStore,
+  useWidgetStore
 } from '@/stores'
 import { LocalStorage } from '@/utils/helper/LocalStorage'
 import { sortBy } from 'lodash'
@@ -200,6 +202,7 @@ import { useRouter } from 'vue-router'
 import Dropdown from '@/components/Dropdown.vue'
 import AiJourney from '@/views/ChatWarper/Chat/CenterContent/MessageList/AiJourney.vue'
 import PostRightBar from '@/views/ChatWarper/Chat/RightBar/PostRightBar.vue'
+import SkeletonLoading from '@/views/ChatWarper/Chat/RightBar/SkeletonLoading.vue'
 import WidgetSorting from '@/views/ChatWarper/Chat/RightBar/WidgetSorting.vue'
 import { useWidget } from '@/views/composables/useWidget'
 
@@ -213,6 +216,11 @@ import {
 } from '@heroicons/vue/24/solid'
 
 import type { AppInstalledInfo } from '@/service/interface/app/widget'
+// props
+defineProps<{
+  /** có nên hiển thị skeleton loading ko */
+  is_loading?: boolean
+}>()
 
 const $router = useRouter()
 

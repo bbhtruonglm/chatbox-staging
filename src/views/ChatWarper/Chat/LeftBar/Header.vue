@@ -1,6 +1,11 @@
 <template>
   <div class="flex-shrink-0 px-2 gap-1 flex justify-start items-center">
     <div
+      v-if="!orgStore.selected_org_info"
+      class="h-8 w-40 bg-slate-200 rounded animate-pulse"
+    ></div>
+    <div
+      v-else
       v-tooltip.bottom="`v${version}`"
       class="font-semibold text-2xl truncate"
     >
@@ -18,7 +23,7 @@
   </div>
   <div class="flex-shrink-0 flex items-center justify-between">
     <template v-if="!is_search">
-      <div class="text-sm gap-3 flex items-center h-8">
+      <div class="text-sm gap-3 flex items-center h-8 min-w-0">
         <button
           @click="$main.activeTab('CHAT')"
           :class="{
@@ -27,7 +32,7 @@
               conversationStore.option_filter_page_data.conversation_type ===
                 'CHAT',
           }"
-          class="h-full flex gap-1 items-center"
+          class="h-full flex gap-1 items-center truncate"
         >
           <p>{{ $t('Chat') }}</p>
           <p
@@ -44,7 +49,7 @@
               conversationStore.option_filter_page_data.conversation_type ===
               'POST',
           }"
-          class="h-full flex gap-1 items-center"
+          class="h-full flex gap-1 items-center truncate"
         >
           <p>{{ $t('Bài viết') }}</p>
           <p
@@ -55,7 +60,7 @@
           </p>
         </button>
       </div>
-      <div class="flex gap-3 text-slate-500">
+      <div class="flex gap-3 text-slate-500 shrink-0">
         <button
           v-show="
             conversationStore.select_conversation?.platform_type?.includes(
@@ -102,7 +107,7 @@
         class="absolute top-1/2 left-3 -translate-y-1/2 w-4 h-4 text-slate-500"
       />
       <input
-        v-model="search_conversation"
+        v-model.trim="search_conversation"
         @blur="$main.toggleSearch()"
         ref="ref_search_conversation"
         class="w-full bg-slate-100 placeholder-slate-500 py-1.5 pl-9 pr-8 text-sm rounded-full"
@@ -168,11 +173,12 @@ import { storeToRefs } from 'pinia'
 
 /**tab đang kích hoạt */
 type IActiveTab = 'CHAT' | 'POST'
-
+// store
 const conversationStore = useConversationStore()
 const commonStore = useCommonStore()
 const pageStore = usePageStore()
 const orgStore = useOrgStore()
+// i18n
 const { t: $t } = useI18n()
 
 const { modal_zalo_personal_ref, message_data, modal_zalo_create_group_ref } =
@@ -198,7 +204,7 @@ const ref_search_conversation = ref<HTMLInputElement>()
 const onSearchConversation = debounce((value?: string) => {
   // lưu giá trị search vào biến
   conversationStore.option_filter_page_data.search = value
-}, 300)
+}, 500)
 
 /** dữ liệu lọc thể hiện ra dạng chuỗi */
 const filter = computed(() => {
@@ -406,7 +412,7 @@ class Main {
       },
     })
   }
-  /**chuyển đổi trạng thái tìm kiếm */
+  /**chuyển đổi trạng thái tìm kiếm */ 
   async toggleSearch() {
     // nếu đang tìm kiếm và có giá trị ô tìm kiếm thì không cho đóng ô tìm kiếm
     if (is_search.value && search_conversation.value) return

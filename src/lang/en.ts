@@ -304,6 +304,33 @@ const source: Language = {
   'Kết nối với Tiktok': 'Connect with TikTok',
   'Kết nối với Tiktok để chat nhiều Trang tự động với AI, tối ưu chi phí Marketing với CAPI, tự động tích hợp các ứng dụng của Doanh nghiệp.':
     'Connect with TikTok to chat automatically across multiple Pages with AI, optimize marketing costs with CAPI, and automatically integrate your business applications.',
+  'Thông báo gói VIP': 'VIP Package Notification',
+  'Một số tổ chức của bạn sắp hoặc đã hết hạn gói':
+    'Some of your organizations have expired or are about to expire',
+  'Đã hết hạn:': 'Expired:',
+  'Đã hết hạn': 'Expired',
+  'hết hạn': 'expired',
+  'Sắp hết hạn:': 'About to expire:',
+  'Sắp hết hạn': 'About to expire',
+  còn: 'remaining',
+  'Còn _ ngày': 'Remaining {duration} days',
+
+  ngày: 'day',
+  'Bỏ qua': 'Skip',
+  'Gia hạn ngay': 'Renew now',
+  '...và còn': '...and {duration} more',
+  'tổ chức khác': 'other organization',
+  'Thông báo quan trọng': 'Important notification',
+  'Xem các gói': 'View packages',
+  'Không hiện lại bảng này ': 'Do not show again',
+  'Gói của một số Tổ chức sắp hết hạn. Bạn nên gia hạn để tiếp tục sử dụng đầy đủ tính năng và không gián đoạn dịch vụ':
+    'Some packages of organizations are about to expire. You should renew to continue using all features and avoid service interruption',
+  'Đổi gói': 'Change package',
+  'Ngày hết hạn': 'Expiry date',
+  'Gói hiện tại': 'Current package',
+  'File vượt quá dung lượng cho phép': 'File size exceeds the allowed limit',
+  'Vui lòng chuyển sang tài khoản TikTok Business': 'Please switch to TikTok Business account',
+
   v1: {
     common: {
       zalo: 'Zalo',
@@ -874,6 +901,8 @@ const source: Language = {
               findding_uid: 'Searching for UID',
             },
             error: {
+              page_deleted:
+                'Some pages may have been deleted from your organization, please go back to the page selection screen and select again',
               get_page_info: 'Page data not found',
               get_org_info: 'Organization data not found',
               org_quota_staff:
@@ -885,6 +914,7 @@ const source: Language = {
             },
             you: 'You:',
             empty_message: 'Please select a conversation to start chatting',
+            uploading_image: 'Uploading image',
             empty_conversation: 'No conversation found!',
             empty_select_conversation: 'Select a customer to start!',
             assign_staff: {
@@ -1405,6 +1435,8 @@ const source: Language = {
               pack_use: 'Package in use',
               pack_time: 'Usage time',
               page_amount: 'Page amount',
+
+              last_reset: 'Package last reset',
               staff_amount: 'Staff amount',
               bot: 'Chatbot',
               chat_feature: 'Chat features',

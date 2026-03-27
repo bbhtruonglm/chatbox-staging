@@ -32,6 +32,12 @@ export class N4SerivceAppPage extends N4Serivce {
     /** gọi api */
     return this.post('get_current_page', body)
   }
+  public async getListActivePage(
+    body?: Record<string, any>
+  ): Promise<CurrentPageData> {
+    // gọi api
+    return this.post('get_available_pages', body)
+  }
   /**
    * đọc danh sách trang đang kích hoạt của tổ chức
    * @param org_id id tổ chức
@@ -107,6 +113,27 @@ export class N4SerivceAppPage extends N4Serivce {
       {
         org_id,
         list_page_id: page_ids,
+      },
+      is_raw_error
+    )
+  }
+  /**
+   * lấy dữ liệu page, widget, staff, user, ... của các page liên quan cần chat
+   * @param org_id id tổ chức
+   * @param page_ids danh sách id trang
+   * @param is_raw_error trả về dữ liệu lỗi nguyên bản
+   */
+  public async getPageDetails(
+    org_id: string,
+    page_ids: string[],
+    is_raw_error?: boolean
+  ): Promise<PageList> {
+    // gọi api
+    return this.post(
+      'get_pages_details',
+      {
+        org_id,
+        page_ids: page_ids,
       },
       is_raw_error
     )

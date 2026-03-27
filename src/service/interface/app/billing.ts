@@ -135,6 +135,8 @@ export interface OrgInfo {
     org_current_ai_video?: number
     /**cho phép tổ chức dùng tính năng zl cá nhân dù gói không cho phép */
     org_allow_zlp?: boolean
+    /**ngày reset cuối cùng */
+    org_last_reset_date?: number
   }
 }
 

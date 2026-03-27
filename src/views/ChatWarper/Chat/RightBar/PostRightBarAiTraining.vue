@@ -17,6 +17,7 @@
       <!-- Input / Textarea -->
       <div>
         <textarea
+          ref="textarea_ref"
           v-if="is_expanded"
           v-model="description"
           rows="6"
@@ -28,7 +29,7 @@
           v-else
           type="text"
           v-model="description"
-          @focus="is_expanded = true"
+          @focus="expandAndFocus"
           class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
           placeholder="Nhập nội dung để huấn luyện AI tư vấn khách hàng"
         />
@@ -68,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { SparklesIcon } from '@heroicons/vue/24/solid'
 import { update_info_conversation } from '@/service/api/chatbox/n4-service'
 import { reject } from 'lodash'
@@ -77,16 +78,27 @@ import { useConversationStore } from '@/stores'
 const is_expanded = ref(false)
 /** mô tả */
 const description = ref<string>('')
+/** ref của textarea */
+const textarea_ref = ref<HTMLTextAreaElement | null>(null)
+
+/** mở rộng và focus vào textarea */
+const expandAndFocus = async () => {
+  is_expanded.value = true
+  await nextTick()
+  textarea_ref.value?.focus()
+}
 /** Khai báo conversation */
 const conversationStore = useConversationStore()
 /** Theo dõi data trong store */
 watch(
-  () => conversationStore.select_conversation?.ai_description,
+  () => conversationStore.select_conversation,
   newVal => {
     /** Gán giá trị */
-    description.value = newVal || ''
+    description.value = newVal?.ai_description || ''
+    /** Reset trạng thái mở rộng */
+    is_expanded.value = false
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 
 /** Hủy bỏ chỉnh sửa */
@@ -104,9 +116,9 @@ const client_id = computed(
 /** Gọi API lưu dữ liệu */
 const save = async () => {
   try {
-    /**gọi api cập nhật tên khách hàng */
-    await new Promise((resolve, reject) => {
-      /**nếu chưa có id của trang hoặc khách hàng thì bỏ qua */
+    /** gọi api cập nhật tên khách hàng */
+    await new Promise((resolve, reject_promise) => {
+      /** nếu chưa có id của trang hoặc khách hàng thì bỏ qua */
       if (!page_id.value || !client_id.value) return
 
       update_info_conversation(
@@ -115,12 +127,20 @@ const save = async () => {
           client_id: client_id.value,
           ai_description: description.value,
         },
-        (e, r) => {
-          if (e) reject(e)
-          else resolve(r)
+        (error, response) => {
+          /** Nếu lỗi thì reject */
+          if (error) reject_promise(error)
+          /** Nếu thành công thì resolve */ else resolve(response)
         }
       )
     })
+
+    /** Cập nhật lại description trong store để đồng bộ dữ liệu */
+    if (conversationStore.select_conversation) {
+      /** Gán giá trị mới cho store */
+      conversationStore.select_conversation.ai_description = description.value
+    }
+
     is_expanded.value = false
     console.log('Đã lưu:', description.value)
   } catch (err) {

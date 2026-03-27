@@ -66,6 +66,8 @@ const source: Language = {
   'Trả lời sau _': 'Trả lời sau {duration}',
   Lọc: 'Lọc',
   Nhãn: 'Nhãn',
+  'nhãn': 'nhãn',
+  'Nhãn chung': 'Nhãn chung',
   'Trừ nhãn': 'Trừ nhãn',
   'Thời gian': 'Thời gian',
   'Nhân viên': 'Nhân viên',
@@ -103,6 +105,33 @@ const source: Language = {
   'Kết nối với Tiktok để chat nhiều Trang tự động với AI, tối ưu chi phí Marketing với CAPI, tự động tích hợp các ứng dụng của Doanh nghiệp.':
     'Kết nối với Tiktok để chat nhiều Trang tự động với AI, tối ưu chi phí Marketing với CAPI, tự động tích hợp các ứng dụng của Doanh nghiệp.',
   'add _ member': 'Thêm {count} thành viên',
+
+  'Thông báo gói VIP': 'Thông báo gói VIP',
+  'Một số tổ chức của bạn sắp hoặc đã hết hạn gói':
+    'Một số tổ chức của bạn sắp hoặc đã hết hạn gói',
+  'Đã hết hạn:': 'Đã hết hạn:',
+  'hết hạn': 'hết hạn',
+  'Sắp hết hạn:': 'Sắp hết hạn:',
+  còn: 'còn',
+  'Còn _ ngày': 'Còn {duration} ngày',
+
+  ngày: 'ngày',
+  'Bỏ qua': 'Bỏ qua',
+  'Gia hạn ngay': 'Gia hạn ngay',
+  '...và còn': '...và còn',
+  'tổ chức khác': 'tổ chức khác',
+
+  'Thông báo quan trọng': 'Thông báo quan trọng',
+  'Xem các gói': 'Xem các gói',
+  'Gói của một số Tổ chức sắp hết hạn. Bạn nên gia hạn để tiếp tục sử dụng đầy đủ tính năng và không gián đoạn dịch vụ':
+    'Gói của một số Tổ chức sắp hết hạn. Bạn nên gia hạn để tiếp tục sử dụng đầy đủ tính năng và không gián đoạn dịch vụ',
+  'Đổi gói': 'Đổi gói',
+  'Ngày hết hạn': 'Ngày hết hạn',
+  'Gói hiện tại': 'Gói hiện tại',
+  'Không hiện lại bảng này': 'Không hiện lại bảng này',
+  'File vượt quá dung lượng cho phép': 'File vượt quá dung lượng cho phép',
+  'Vui lòng chuyển sang tài khoản TikTok Business': 'Vui lòng chuyển sang tài khoản TikTok Business',
+
   v1: {
     common: {
       zalo: 'Zalo',
@@ -670,6 +699,8 @@ const source: Language = {
               findding_uid: 'Đang tìm kiếm UID',
             },
             error: {
+              page_deleted:
+                'Một số page có thể đã bị xóa khỏi Tổ chức của bạn, vui lòng quay lại màn chọn trang và lựa chọn lại',
               get_page_info: 'Không tìm thấy dữ liệu trang',
               get_org_info: 'Không tìm thấy dữ liệu tổ chức',
               org_quota_staff:
@@ -681,6 +712,7 @@ const source: Language = {
             },
             you: 'Bạn:',
             empty_message: 'Hãy chọn 1 hội thoại để bắt đầu trò chuyện',
+            uploading_image: 'Đang tải ảnh lên',
             empty_conversation: 'Không tìm thấy hội thoại!',
             empty_select_conversation: 'Chọn một khách hàng để bắt đầu!',
             assign_staff: {
@@ -1203,6 +1235,7 @@ const source: Language = {
               pack_use: 'Gói đang sử dụng',
               pack_time: 'Thời gian sử dụng',
               page_amount: 'Số lượng trang',
+              last_reset: 'Làm mới gói gần nhất',
               staff_amount: 'Số lượng nhân sự',
               bot: 'Chatbot',
               chat_feature: 'Các tính năng chat',

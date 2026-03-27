@@ -6,9 +6,12 @@
           <div class="size-9 overflow-hidden group">
             <div class="size-full group-hover:hidden">
               <img
-                v-if="orgStore.selected_org_info?.org_info?.org_avatar"
+                v-if="
+                  $main.isShowOrgLogo() &&
+                  orgStore.selected_org_info?.org_info?.org_avatar
+                "
                 :src="orgStore.selected_org_info?.org_info?.org_avatar"
-                class="w-full h-full rounded-full"
+                class="w-full h-full rounded-full object-cover"
               />
               <img
                 v-else
@@ -192,7 +195,6 @@ import TagNotIcon from '@/components/Icons/TagNot.vue'
 import UsersIcon from '@/components/Icons/Users.vue'
 import { ArrowLeftIcon, Squares2X2Icon } from '@heroicons/vue/24/solid'
 
-
 const conversationStore = useConversationStore()
 const orgStore = useOrgStore()
 const commonStore = useCommonStore()
@@ -228,18 +230,22 @@ watch(
       $main.clearAllFilter()
     }
 
-    /** map từ key shortcut sang ref của dropdown */ 
-    const FILTER_MAP: Record<string, {
-      filter_dropdown_ref?: { is_open: boolean }
-    } | undefined> = {
+    /** map từ key shortcut sang ref của dropdown */
+    const FILTER_MAP: Record<
+      string,
+      | {
+          filter_dropdown_ref?: { is_open: boolean }
+        }
+      | undefined
+    > = {
       interact: filter_interact.value,
-      message:  filter_message.value,
-      phone:    filter_phone.value,
-      date:     filter_date.value,
-      tag:      filter_tag.value,
-      not_tag:  filter_not_tag.value,
-      staff:    filter_staff.value,
-      post:     filter_post.value,
+      message: filter_message.value,
+      phone: filter_phone.value,
+      date: filter_date.value,
+      tag: filter_tag.value,
+      not_tag: filter_not_tag.value,
+      staff: filter_staff.value,
+      post: filter_post.value,
     }
 
     // nếu không liên quan đến lọc thì thôi
@@ -308,6 +314,11 @@ class Main {
     // nếu chỉ cho nv xem của mình thì không hiện lọc nhân viên
     return !SPECIAL_PAGE_CONFIG.is_only_visible_client_of_staff
   }
+  /**kiểm tra xem có hiển thị logo tổ chức không */
+  isShowOrgLogo() {
+    return orgStore.isBusinessPack()
+  }
+
   /** Xóa toàn bộ lọc đã chọn */
   clearAllFilter() {
     filter_interact.value?.clearThisFilter()
