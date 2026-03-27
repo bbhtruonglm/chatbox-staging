@@ -79,7 +79,6 @@ class Main {
 
     // nếu không có ref thì thôi
     if (!ORG_ID) return
-
     // lưu ref vào local storage
     setItem('selected_org_id', ORG_ID)
 
